@@ -201,6 +201,7 @@ SCHEMA = '''
         is_verified INTEGER DEFAULT 0,
         avatar_url TEXT,
         wallet_balance REAL DEFAULT 0,
+        is_active INTEGER DEFAULT 1,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
@@ -397,6 +398,11 @@ def init_db():
                 conn.execute(_ddl(s, True) + ';')
     else:
         conn.executescript(_ddl(SCHEMA, False))
+
+    try:
+        conn.execute('ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 1')
+    except Exception:
+        pass
 
     if not conn.execute('SELECT id FROM users WHERE email = %s', (ADMIN_EMAIL,)).fetchone():
         hashed = generate_password_hash(ADMIN_PASSWORD)
@@ -727,6 +733,7 @@ def google_callback():
         user = conn.execute('SELECT * FROM users WHERE id = %s', (user_id,)).fetchone()
         notify(user_id, 'مرحباً بك في تسهيل!', f'أهلاً {name}، تم إنشاء حسابك عبر Google بنجاح!', 'success', '/profile')
     conn.close()
+    session.permanent = True
     session['user_id'] = user['id']
     session['full_name'] = user['full_name']
     session['user_type'] = user['user_type']
@@ -796,6 +803,7 @@ def facebook_callback():
         user = conn.execute('SELECT * FROM users WHERE id = %s', (user_id,)).fetchone()
         notify(user_id, 'مرحباً بك في تسهيل!', f'أهلاً {name}، تم إنشاء حسابك عبر Facebook بنجاح!', 'success', '/profile')
     conn.close()
+    session.permanent = True
     session['user_id'] = user['id']
     session['full_name'] = user['full_name']
     session['user_type'] = user['user_type']
@@ -815,8 +823,9 @@ def login():
         user = conn.execute('SELECT * FROM users WHERE email = %s', (email,)).fetchone()
         conn.close()
 
-        if user and check_password_hash(user['password'], password):
+        if user and user.get('is_active', 1) and check_password_hash(user['password'], password):
             session.clear()
+            session.permanent = True
             session['csrf_token'] = secrets.token_hex(32)
             session['user_id'] = user['id']
             session['full_name'] = user['full_name']
@@ -1099,12 +1108,25 @@ def job_detail(job_id):
                 u.full_name, u.phone, u.email, u.avatar_url
         FROM jobs j JOIN employers e ON j.employer_id = e.id
         JOIN users u ON e.user_id = u.id
-        WHERE j.id = %s AND j.status = 'approved'
+        WHERE j.id = %s
     ''', (job_id,)).fetchone()
 
     if not job:
         flash('الوظيفة غير موجودة', 'danger')
         return redirect(url_for('jobs'))
+
+    if job['status'] != 'approved' and job['status'] != 'pending':
+        flash('الوظيفة غير موجودة', 'danger')
+        return redirect(url_for('jobs'))
+
+    if job['status'] == 'pending':
+        owner_id = conn.execute(
+            'SELECT user_id FROM employers WHERE id = %s',
+            (job['employer_id'],)
+        ).fetchone()
+        if not owner_id or owner_id['user_id'] != session['user_id']:
+            flash('الوظيفة غير موجودة', 'danger')
+            return redirect(url_for('jobs'))
 
     conn.execute('UPDATE jobs SET views_count = views_count + 1 WHERE id = %s', (job_id,))
 
@@ -1649,7 +1671,7 @@ def admin_toggle_verify(user_id):
 def admin_delete_user(user_id):
     conn = get_db()
     conn.execute('DELETE FROM notifications WHERE user_id = %s', (user_id,))
-    conn.execute('DELETE FROM users WHERE id = %s', (user_id,))
+    conn.execute('UPDATE users SET is_active = 0 WHERE id = %s', (user_id,))
     conn.commit()
     conn.close()
     flash('تم حذف المستخدم', 'success')
