@@ -22,6 +22,14 @@ app.config.update(
 app.secret_key = os.environ.get('SECRET_KEY') or os.urandom(32).hex()
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
 
+@app.template_filter('date')
+def date_filter(val):
+    if val is None:
+        return ''
+    if isinstance(val, str):
+        return val[:10]
+    return val.strftime('%Y-%m-%d')
+
 limiter = Limiter(app=app, key_func=get_remote_address, storage_uri='memory://')
 
 CSRF_SAFE_ENDPOINTS = {'login', 'register', 'forgot_password', 'reset_password',
@@ -1971,7 +1979,7 @@ def sitemap_xml():
     jobs = conn.execute('SELECT id, updated_at FROM jobs WHERE status = %s ORDER BY id', ('approved',)).fetchall()
     conn.close()
     for job in jobs:
-        updated = job['updated_at'][:10] if job['updated_at'] else today
+        updated = date_filter(job['updated_at']) if job['updated_at'] else today
         xml += f'''  <url>
     <loc>{base}/job/{job['id']}</loc>
     <lastmod>{updated}</lastmod>

@@ -85,7 +85,7 @@
                                             {{ job.status }}
                                         </span>
                                     </td>
-                                    <td><small>{{ job.created_at[:10] }}</small></td>
+                                    <td><small>{{ job.created_at|date }}</small></td>
                                 </tr>
                                 {% endfor %}
                             </tbody>

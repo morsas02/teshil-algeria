@@ -17,7 +17,7 @@
                             <td><small>{{ m.email }}</small></td>
                             <td>{{ m.subject or '-' }}</td>
                             <td><small>{{ m.message[:80] }}...</small></td>
-                            <td><small>{{ m.created_at[:10] }}</small></td>
+                            <td><small>{{ m.created_at|date }}</small></td>
                         </tr>
                         {% else %}
                         <tr><td colspan="5" class="text-center py-4 text-muted">لا توجد رسائل</td></tr>

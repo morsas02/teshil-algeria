@@ -34,7 +34,7 @@
                         <tbody>
                             {% for t in transactions %}
                             <tr>
-                                <td style="font-size:0.8rem;">{{ t.created_at[:10] }}</td>
+                                <td style="font-size:0.8rem;">{{ t.created_at|date }}</td>
                                 <td>{{ t.description }}</td>
                                 <td>
                                     {% if t.type == 'credit' %}

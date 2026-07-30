@@ -28,7 +28,7 @@
                             <td>
                                 {% if job.is_featured %}<span class="badge bg-warning text-dark"><i class="bi bi-star-fill"></i></span>{% endif %}
                             </td>
-                            <td><small>{{ job.created_at[:10] }}</small></td>
+                            <td><small>{{ job.created_at|date }}</small></td>
                             <td>
                                 <div class="btn-group btn-group-sm">
                                     {% if current_status == 'pending' %}

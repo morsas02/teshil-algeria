@@ -28,7 +28,7 @@
                     {% if app.cover_letter %}
                     <p class="text-muted small mt-1"><em>"{{ app.cover_letter[:100] }}..."</em></p>
                     {% endif %}
-                    <small class="text-muted">قدمت في: {{ app.created_at[:10] }}</small>
+                    <small class="text-muted">قدمت في: {{ app.created_at|date }}</small>
                 </div>
                 <div class="text-center">
                     <span class="badge d-block mb-1 py-2 px-3 {% if app.status == 'pending' %}bg-warning text-dark{% elif app.status == 'reviewed' %}bg-info{% elif app.status == 'accepted' %}bg-success{% else %}bg-danger{% endif %}">

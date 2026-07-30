@@ -119,7 +119,7 @@
                         <tr><td class="text-muted">التخصص</td><td><span class="badge badge-algeria">{{ job.category or 'عام' }}</span></td></tr>
                         <tr><td class="text-muted">الراتب</td><td class="fw-bold salary">{% if job.salary_min %}{{ job.salary_min }}{% if job.salary_max %} - {{ job.salary_max }}{% endif %} دج{% else %}غير محدد{% endif %}</td></tr>
                         <tr><td class="text-muted">عدد المناصب</td><td class="fw-bold">{{ job.positions_count or 1 }}</td></tr>
-                        <tr><td class="text-muted">نشر في</td><td>{{ job.created_at[:10] }}</td></tr>
+                        <tr><td class="text-muted">نشر في</td><td>{{ job.created_at|date }}</td></tr>
                         <tr><td class="text-muted">المشاهدات</td><td>{{ job.views_count or 0 }}</td></tr>
                     </table>
                 </div>

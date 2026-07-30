@@ -21,7 +21,7 @@
                                     {{ a.status }}
                                 </span>
                             </td>
-                            <td><small>{{ a.created_at[:10] }}</small></td>
+                            <td><small>{{ a.created_at|date }}</small></td>
                         </tr>
                         {% else %}
                         <tr><td colspan="5" class="text-center py-4 text-muted">لا توجد طلبات</td></tr>
