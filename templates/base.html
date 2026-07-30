@@ -184,8 +184,8 @@
         .pagination .page-link { color: var(--primary); border: none; padding: 8px 14px; border-radius: 8px; margin: 0 2px; font-weight: 500; transition: all 0.2s; }
         .pagination .page-item.active .page-link { background: var(--primary); color: #fff; }
         .page-item.disabled .page-link { color: var(--gray-300); }
-        .page-loader { position: fixed; inset: 0; z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(135deg, #064e3b 0%, #059669 50%, #10b981 100%); background-size: 200% 200%; animation: loaderBg 4s ease infinite; opacity: 0; pointer-events: none; transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
-        .page-loader.show { opacity: 1; pointer-events: all; }
+        .page-loader { position: fixed; inset: 0; z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(135deg, #064e3b 0%, #059669 50%, #10b981 100%); background-size: 200% 200%; animation: loaderBg 4s ease infinite; opacity: 1; pointer-events: all; transition: opacity 0.5s cubic-bezier(0.4,0,0.2,1); }
+        .page-loader.hide { opacity: 0; pointer-events: none; }
         .page-loader .loader-icon { width: 64px; height: 64px; border-radius: 18px; background: rgba(255,255,255,0.12); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; margin-bottom: 20px; animation: loaderIcon 2s ease-in-out infinite; border: 1px solid rgba(255,255,255,0.15); }
         .page-loader .loader-icon i { font-size: 2rem; color: #fff; }
         .page-loader .loader-brand { font-size: 2.2rem; font-weight: 800; color: #fff; letter-spacing: -1px; display: flex; align-items: center; gap: 4px; }
@@ -404,7 +404,7 @@
     </script>
     {% block scripts %}{% endblock %}
     <script>document.querySelectorAll('form[method="POST"]').forEach(function(f){var i=document.createElement('input');i.type='hidden';i.name='csrf_token';i.value='{{ session.csrf_token }}';f.appendChild(i)})
-    var loader=document.getElementById('pageLoader');if(loader){var links=document.querySelectorAll('a:not([target="_blank"]):not([href^="#"]):not([href^="javascript"]):not([href^="mailto"]):not([href^="tel"])');links.forEach(function(a){a.addEventListener('click',function(e){var h=this.getAttribute('href');if(h&&h!=='#'&&!h.startsWith('?')){loader.classList.add('show')}})})}
+    window.addEventListener('pageshow',function(){var l=document.getElementById('pageLoader');if(l){l.classList.remove('hide');setTimeout(function(){l.classList.add('hide')},600)}});var l=document.getElementById('pageLoader');if(l){var links=document.querySelectorAll('a:not([target="_blank"]):not([href^="#"]):not([href^="javascript"]):not([href^="mailto"]):not([href^="tel"]):not([href^="http"])');links.forEach(function(a){a.addEventListener('click',function(){l.classList.remove('hide')})})}
     </script>
 </body>
 </html>
