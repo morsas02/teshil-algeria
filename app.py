@@ -1120,59 +1120,83 @@ def jobs():
 @app.route('/jobs/<int:job_id>')
 @login_required
 def job_detail(job_id):
-    with get_db() as conn:
-        job = conn.execute('''
-            SELECT j.*, e.company_name, e.company_size, e.company_sector,
-                   e.city as e_city, e.wilaya as e_wilaya,
-                   e.company_description, e.company_website, e.company_logo,
-                    u.full_name, u.phone, u.email, u.avatar_url
-            FROM jobs j JOIN employers e ON j.employer_id = e.id
-            JOIN users u ON e.user_id = u.id
-            WHERE j.id = %s
-        ''', (job_id,)).fetchone()
+    import datetime as dt
+    debug = {}
+    try:
+        with get_db() as conn:
+            debug['conn'] = 'ok'
+            job = conn.execute('''
+                SELECT j.*, e.company_name, e.company_size, e.company_sector,
+                       e.city as e_city, e.wilaya as e_wilaya,
+                       e.company_description, e.company_website, e.company_logo,
+                        u.full_name, u.phone, u.email, u.avatar_url
+                FROM jobs j JOIN employers e ON j.employer_id = e.id
+                JOIN users u ON e.user_id = u.id
+                WHERE j.id = %s
+            ''', (job_id,)).fetchone()
+            debug['job'] = 'found' if job else 'missing'
 
-        if not job:
-            flash('الوظيفة غير موجودة', 'danger')
-            return redirect(url_for('jobs'))
-
-        if job['status'] not in ('approved', 'pending'):
-            flash('الوظيفة غير موجودة', 'danger')
-            return redirect(url_for('jobs'))
-
-        if job['status'] == 'pending':
-            owner_id = conn.execute(
-                'SELECT user_id FROM employers WHERE id = %s',
-                (job['employer_id'],)
-            ).fetchone()
-            if not owner_id or owner_id['user_id'] != session['user_id']:
+            if not job:
                 flash('الوظيفة غير موجودة', 'danger')
                 return redirect(url_for('jobs'))
 
-        conn.execute('UPDATE jobs SET views_count = views_count + 1 WHERE id = %s', (job_id,))
+            debug['status'] = job['status']
+            if job['status'] not in ('approved', 'pending'):
+                flash('الوظيفة غير موجودة', 'danger')
+                return redirect(url_for('jobs'))
 
-        similar = conn.execute('''
-            SELECT j.*, e.company_name, u.avatar_url FROM jobs j
-            JOIN employers e ON j.employer_id = e.id
-            WHERE j.category IS NOT NULL AND j.category = %s AND j.id != %s AND j.status = 'approved'
-            LIMIT 4
-        ''', (job['category'], job_id)).fetchall()
+            if job['status'] == 'pending':
+                owner_id = conn.execute(
+                    'SELECT user_id FROM employers WHERE id = %s',
+                    (job['employer_id'],)
+                ).fetchone()
+                debug['owner'] = owner_id['user_id'] if owner_id else None
+                if not owner_id or owner_id['user_id'] != session['user_id']:
+                    flash('الوظيفة غير موجودة', 'danger')
+                    return redirect(url_for('jobs'))
 
-        has_applied = False
-        is_saved = False
-        if 'user_id' in session and session['user_type'] == 'worker':
-            worker = conn.execute('SELECT id FROM workers WHERE user_id = %s', (session['user_id'],)).fetchone()
-            if worker:
-                has_applied = bool(conn.execute(
-                    'SELECT id FROM applications WHERE job_id = %s AND worker_id = %s',
-                    (job_id, worker['id'])
-                ).fetchone())
-                is_saved = bool(conn.execute(
-                    'SELECT id FROM saved_jobs WHERE job_id = %s AND worker_id = %s',
-                    (job_id, worker['id'])
-                ).fetchone())
+            debug['company_name'] = repr(job['company_name'])
+            debug['company_name_type'] = type(job['company_name']).__name__
+            debug['created_at'] = repr(job['created_at'])
+            debug['created_at_type'] = type(job['created_at']).__name__
+            debug['salary_min'] = repr(job['salary_min'])
+            debug['salary_min_type'] = type(job['salary_min']).__name__
 
-        conn.commit()
-    return render_template('job_detail.html', job=job, similar=similar, has_applied=has_applied, is_saved=is_saved)
+            conn.execute('UPDATE jobs SET views_count = views_count + 1 WHERE id = %s', (job_id,))
+
+            similar = conn.execute('''
+                SELECT j.*, e.company_name, u.avatar_url FROM jobs j
+                JOIN employers e ON j.employer_id = e.id
+                WHERE j.category IS NOT NULL AND j.category = %s AND j.id != %s AND j.status = 'approved'
+                LIMIT 4
+            ''', (job['category'], job_id)).fetchall()
+            debug['similar'] = len(similar)
+
+            has_applied = False
+            is_saved = False
+            if 'user_id' in session and session['user_type'] == 'worker':
+                worker = conn.execute('SELECT id FROM workers WHERE user_id = %s', (session['user_id'],)).fetchone()
+                if worker:
+                    has_applied = bool(conn.execute(
+                        'SELECT id FROM applications WHERE job_id = %s AND worker_id = %s',
+                        (job_id, worker['id'])
+                    ).fetchone())
+                    is_saved = bool(conn.execute(
+                        'SELECT id FROM saved_jobs WHERE job_id = %s AND worker_id = %s',
+                        (job_id, worker['id'])
+                    ).fetchone())
+
+            conn.commit()
+        debug['render'] = 'starting'
+        result = render_template('job_detail.html', job=job, similar=similar, has_applied=has_applied, is_saved=is_saved)
+        debug['render'] = 'done'
+        return result
+    except Exception as e:
+        import traceback as tb
+        info = '\n'.join(f'{k}={v}' for k,v in debug.items())
+        return f'''<h1>Error</h1><pre>Exception: {e}
+{info}
+{tb.format_exc()}</pre>''', 500
 
 @app.route('/jobs/create', methods=['GET', 'POST'])
 @employer_required
