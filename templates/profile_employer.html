@@ -9,12 +9,24 @@
         <div class="col-lg-8">
             <div class="card">
                 <div class="card-body p-4">
-                    <form method="POST">
-                        <div class="text-center mb-4">
-                            <div class="avatar-md mx-auto mb-2">{{ user.company_name[0] if user.company_name else 'م' }}</div>
-                            <h5 class="fw-bold">{{ user.company_name or 'غير محدد' }}</h5>
-                            <p class="text-muted">{{ user.email }}</p>
+                    <div class="text-center mb-4">
+                        {% if session.avatar_url %}
+                        <img src="{{ session.avatar_url }}" class="avatar-img mx-auto mb-2" alt="{{ user.company_name or user.full_name }}">
+                        {% else %}
+                        <div class="avatar-md mx-auto mb-2">{{ user.company_name[0] if user.company_name else 'م' }}</div>
+                        {% endif %}
+                        <div class="mt-2">
+                            <form action="/upload-avatar" method="POST" enctype="multipart/form-data">
+                                <label class="btn btn-sm btn-outline-primary" style="cursor:pointer;font-size:0.78rem;">
+                                    <i class="bi bi-camera"></i> تغيير الصورة
+                                    <input type="file" name="avatar" accept="image/png,image/jpeg,image/gif,image/webp" style="display:none;" onchange="this.form.submit()">
+                                </label>
+                            </form>
                         </div>
+                        <h5 class="fw-bold mt-3">{{ user.company_name or 'غير محدد' }}</h5>
+                        <p class="text-muted">{{ user.email }}</p>
+                    </div>
+                    <form method="POST">
                         <div class="mb-3">
                             <label class="form-label fw-bold">اسم المؤسسة *</label>
                             <input type="text" name="company_name" class="form-control form-control-lg" value="{{ user.company_name or '' }}" required>

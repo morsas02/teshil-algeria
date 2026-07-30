@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}حالة الدفع{% endblock %}
+{% block content %}
+<div class="container py-4" style="max-width:600px">
+  <div class="card p-4 text-center">
+    <div class="mb-3">
+      {% if req.status == 'pending' %}
+      <i class="bi bi-clock-history" style="font-size:3rem;color:var(--accent);"></i>
+      <h5 class="fw-bold mt-2">في انتظار الدفع</h5>
+      {% elif req.status == 'confirmed' %}
+      <i class="bi bi-check-circle" style="font-size:3rem;color:var(--primary);"></i>
+      <h5 class="fw-bold mt-2">تم تأكيد الدفع</h5>
+      {% elif req.status == 'cancelled' %}
+      <i class="bi bi-x-circle" style="font-size:3rem;color:#ef4444;"></i>
+      <h5 class="fw-bold mt-2">تم إلغاء الدفع</h5>
+      {% endif %}
+    </div>
+
+    <div class="card bg-light p-3 text-start mb-3">
+      <div class="d-flex justify-content-between mb-1">
+        <span class="text-muted">رقم المرجع</span>
+        <span class="fw-bold" dir="ltr">{{ req.reference }}</span>
+      </div>
+      <div class="d-flex justify-content-between mb-1">
+        <span class="text-muted">المبلغ</span>
+        <span class="fw-bold">{{ req.amount }} دج</span>
+      </div>
+      <div class="d-flex justify-content-between mb-1">
+        <span class="text-muted">الحالة</span>
+        <span>
+          {% if req.status == 'pending' %}
+          <span class="badge bg-warning text-dark">قيد الانتظار</span>
+          {% elif req.status == 'confirmed' %}
+          <span class="badge bg-success">مؤكد</span>
+          {% elif req.status == 'cancelled' %}
+          <span class="badge bg-secondary">ملغي</span>
+          {% endif %}
+        </span>
+      </div>
+      <div class="d-flex justify-content-between">
+        <span class="text-muted">التاريخ</span>
+        <span class="fw-bold">{{ req.created_at[:16] }}</span>
+      </div>
+      {% if req.package_name %}
+      <div class="d-flex justify-content-between">
+        <span class="text-muted">الباقة</span>
+        <span class="fw-bold">{{ req.package_name }}</span>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if req.status == 'pending' %}
+    <div class="alert alert-info text-start">
+      <strong><i class="bi bi-info-circle"></i> تعليمات الدفع:</strong>
+      <ol class="mb-0 mt-2" style="font-size:0.9rem;line-height:1.8;">
+        {% if settings.payment_ccp_rib %}
+        <li>قم بتحويل المبلغ (<strong>{{ req.amount }} دج</strong>) إلى حساب CCP: <strong dir="ltr">{{ settings.payment_ccp_rib }}</strong></li>
+        {% endif %}
+        {% if settings.payment_ccp_name %}
+        <li>الاسم: <strong>{{ settings.payment_ccp_name }}</strong></li>
+        {% endif %}
+        <li>ضع المرجع <strong>{{ req.reference }}</strong> في تعليق التحويل</li>
+        {% if settings.payment_baridi %}
+        <li>أو أرسل عبر <strong>BaridiMob</strong> إلى الرقم <strong>{{ settings.payment_baridi }}</strong></li>
+        {% endif %}
+        {% if settings.payment_phone %}
+        <li>أو عبر تطبيق <strong>بريدي موب</strong> إلى <strong>{{ settings.payment_phone }}</strong></li>
+        {% endif %}
+        <li>بعد التحويل، ارفع صورة الإيصال أدناه</li>
+      </ol>
+    </div>
+
+    {% if req.receipt_path %}
+    <div class="alert alert-success">
+      <i class="bi bi-check-circle"></i> تم رفع الإيصال. في انتظار مراجعة الإدارة.
+    </div>
+    {% else %}
+    <form method="POST" action="/employer/payment/{{ req.reference }}/receipt" enctype="multipart/form-data" class="text-start">
+      <label class="form-label fw-bold">رفع إيصال الدفع</label>
+      <div class="mb-2">
+        <input type="file" name="receipt" class="form-control" accept="image/*,.pdf" required>
+      </div>
+      <button type="submit" class="btn btn-primary w-100">رفع الإيصال</button>
+    </form>
+    {% endif %}
+    {% endif %}
+
+    <a href="/employer/wallet" class="btn btn-outline-primary mt-3">العودة للمحفظة</a>
+  </div>
+</div>
+{% endblock %}

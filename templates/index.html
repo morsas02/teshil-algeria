@@ -11,7 +11,7 @@
                 <form action="/jobs" method="GET" class="search-box d-flex">
                     <i class="bi bi-search d-flex align-items-center me-2 text-muted"></i>
                     <input type="text" name="search" class="form-control" placeholder="المسمى الوظيفي، المهارات...">
-                    <select name="wilaya" class="form-select" style="max-width:140px">
+                    <select name="wilaya" class="form-select" style="max-width:140px" aria-label="اختر الولاية">
                         <option value="">كل الولايات</option>
                         {% for w in wilayas %}
                         <option value="{{ w }}">{{ w }}</option>
@@ -172,8 +172,12 @@
     <div class="row">
         {% for e in top_employers %}
         <div class="col-md-3 mb-3">
-            <div class="card text-center p-3 h-100">
-                <div class="avatar-md mx-auto mb-2">{{ e.company_name[0] }}</div>
+                <div class="card text-center p-3 h-100">
+                    {% if e.avatar_url %}
+                    <img src="{{ e.avatar_url }}" class="avatar-img mx-auto mb-2" alt="{{ e.company_name }}">
+                    {% else %}
+                    <div class="avatar-md mx-auto mb-2">{{ e.company_name[0] }}</div>
+                    {% endif %}
                 <h6 class="fw-bold mb-1">{{ e.company_name }}</h6>
                 <small class="text-muted">{{ e.job_count }} وظيفة</small>
             </div>

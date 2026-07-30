@@ -15,6 +15,23 @@
                         <input type="number" name="job_price" class="form-control form-control-lg" value="{{ settings.get('job_price', '1000') }}" min="0" step="100">
                         <small class="text-muted">المبلغ الذي تدفعه المؤسسات لكل نشر وظيفة</small>
                     </div>
+                    <h6 class="fw-bold mt-4 mb-3"><i class="bi bi-bank"></i> معلومات الدفع (CCP / BaridiMob)</h6>
+                    <div class="mb-2">
+                        <label class="form-label">CCP RIB</label>
+                        <input type="text" name="payment_ccp_rib" class="form-control" value="{{ settings.get('payment_ccp_rib', '') }}" placeholder="007 99999 00012345678 01">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">اسم صاحب الحساب CCP</label>
+                        <input type="text" name="payment_ccp_name" class="form-control" value="{{ settings.get('payment_ccp_name', '') }}" placeholder="محمد فلان">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">رقم الهاتف (BaridiMob)</label>
+                        <input type="text" name="payment_phone" class="form-control" value="{{ settings.get('payment_phone', '') }}" placeholder="0555 12 34 56">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">رمز بريدي موب</label>
+                        <input type="text" name="payment_baridi" class="form-control" value="{{ settings.get('payment_baridi', '') }}" placeholder="12345678">
+                    </div>
                     <button type="submit" class="btn btn-primary">حفظ الإعدادات</button>
                 </form>
             </div>

@@ -5,43 +5,90 @@
     <div class="container"><h4 class="fw-bold mb-0"><i class="bi bi-credit-card text-primary"></i> إدارة المعاملات المالية</h4></div>
 </div>
 <div class="container py-4">
+    <ul class="nav nav-tabs mb-4">
+        <li class="nav-item">
+            <a class="nav-link {% if tab != 'payment_requests' %}active{% endif %}" href="{{ url_for('admin_transactions', tab='transactions') }}">سجل المعاملات</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if tab == 'payment_requests' %}active{% endif %}" href="{{ url_for('admin_transactions', tab='payment_requests') }}">
+               طلبات الدفع {% if payment_requests %}<span class="badge bg-warning text-dark ms-1">{{ payment_requests|selectattr('status','equalto','pending')|list|length }}</span>{% endif %}
+            </a>
+        </li>
+    </ul>
+
+    {% if tab == 'payment_requests' %}
     <div class="card p-4">
         <div class="table-responsive">
             <table class="table">
                 <thead>
+                    <tr><th>#</th><th>المرجع</th><th>المستخدم</th><th>المبلغ</th><th>الباقة</th><th>الإيصال</th><th>الحالة</th><th>التاريخ</th><th>إجراءات</th></tr>
+                </thead>
+                <tbody>
+                    {% for r in payment_requests %}
                     <tr>
-                        <th>#</th>
-                        <th>المستخدم</th>
-                        <th>النوع</th>
-                        <th>المبلغ</th>
-                        <th>البيان</th>
-                        <th>الحالة</th>
-                        <th>التاريخ</th>
-                        <th>إجراءات</th>
+                        <td>{{ r.id }}</td>
+                        <td><code dir="ltr">{{ r.reference }}</code></td>
+                        <td>{{ r.full_name }}<br><small class="text-muted">{{ r.email }}</small></td>
+                        <td class="fw-bold">{{ r.amount }} دج</td>
+                        <td>{{ r.package_name or 'شحن مخصص' }}</td>
+                        <td>
+                            {% if r.receipt_path %}
+                            <a href="/static/receipts/{{ r.receipt_path }}" target="_blank" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a>
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if r.status == 'pending' %}<span class="badge bg-warning text-dark">قيد الانتظار</span>
+                            {% elif r.status == 'confirmed' %}<span class="badge bg-success">مؤكد</span>
+                            {% else %}<span class="badge bg-secondary">ملغي</span>{% endif %}
+                        </td>
+                        <td style="font-size:0.8rem;">{{ r.created_at[:16] }}</td>
+                        <td>
+                            {% if r.status == 'pending' %}
+                            <form method="POST" action="{{ url_for('admin_handle_payment', rid=r.id, action='confirm') }}" style="display:inline;">
+                                <button class="btn btn-sm btn-success" onclick="return confirm('تأكيد إضافة {{ r.amount }} دج لحساب {{ r.full_name }}؟')"><i class="bi bi-check-lg"></i></button>
+                            </form>
+                            <form method="POST" action="{{ url_for('admin_handle_payment', rid=r.id, action='cancel') }}" style="display:inline;">
+                                <button class="btn btn-sm btn-secondary" onclick="return confirm('إلغاء طلب الدفع؟')"><i class="bi bi-x-lg"></i></button>
+                            </form>
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
                     </tr>
+                    {% else %}
+                    <tr><td colspan="9" class="text-center py-4 text-muted">لا توجد طلبات دفع</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="card p-4">
+        <div class="mb-3">
+            <a href="{{ url_for('admin_transactions') }}" class="btn btn-sm {% if not request.args.get('status') %}btn-primary{% else %}btn-outline-primary{% endif %}">الكل</a>
+            <a href="{{ url_for('admin_transactions', status='completed') }}" class="btn btn-sm {% if request.args.get('status') == 'completed' %}btn-primary{% else %}btn-outline-primary{% endif %}">مؤكدة</a>
+            <a href="{{ url_for('admin_transactions', status='pending') }}" class="btn btn-sm {% if request.args.get('status') == 'pending' %}btn-primary{% else %}btn-outline-primary{% endif %}">قيد الانتظار</a>
+            <a href="{{ url_for('admin_transactions', status='cancelled') }}" class="btn btn-sm {% if request.args.get('status') == 'cancelled' %}btn-primary{% else %}btn-outline-primary{% endif %}">ملغاة</a>
+        </div>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr><th>#</th><th>المستخدم</th><th>النوع</th><th>المبلغ</th><th>البيان</th><th>الحالة</th><th>التاريخ</th><th>إجراءات</th></tr>
                 </thead>
                 <tbody>
                     {% for t in transactions %}
                     <tr>
                         <td>{{ t.id }}</td>
                         <td>{{ t.full_name }}<br><small class="text-muted">{{ t.email }}</small></td>
-                        <td>
-                            {% if t.type == 'credit' %}
-                            <span class="badge bg-success">إيداع</span>
-                            {% else %}
-                            <span class="badge bg-danger">خصم</span>
-                            {% endif %}
-                        </td>
+                        <td>{% if t.type == 'credit' %}<span class="badge bg-success">إيداع</span>{% else %}<span class="badge bg-danger">خصم</span>{% endif %}</td>
                         <td class="fw-bold">{{ t.amount }}</td>
                         <td style="font-size:0.85rem;">{{ t.description }}</td>
                         <td>
-                            {% if t.status == 'completed' %}
-                            <span class="badge bg-success">مؤكدة</span>
-                            {% elif t.status == 'pending' %}
-                            <span class="badge bg-warning text-dark">قيد الانتظار</span>
-                            {% else %}
-                            <span class="badge bg-secondary">ملغاة</span>
-                            {% endif %}
+                            {% if t.status == 'completed' %}<span class="badge bg-success">مؤكدة</span>
+                            {% elif t.status == 'pending' %}<span class="badge bg-warning text-dark">قيد الانتظار</span>
+                            {% else %}<span class="badge bg-secondary">ملغاة</span>{% endif %}
                         </td>
                         <td style="font-size:0.8rem;">{{ t.created_at[:16] }}</td>
                         <td>
@@ -58,13 +105,12 @@
                         </td>
                     </tr>
                     {% else %}
-                    <tr>
-                        <td colspan="8" class="text-center py-4 text-muted">لا توجد معاملات بعد</td>
-                    </tr>
+                    <tr><td colspan="8" class="text-center py-4 text-muted">لا توجد معاملات</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
+    {% endif %}
 </div>
 {% endblock %}

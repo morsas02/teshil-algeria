@@ -9,7 +9,7 @@
 <div class="container py-4">
     <form class="row g-2 mb-4">
         <div class="col-md-4">
-            <select name="job_id" class="form-select" onchange="this.form.submit()">
+            <select name="job_id" class="form-select" onchange="this.form.submit()" aria-label="اختر الوظيفة">
                 <option value="">كل الوظائف</option>
                 {% for j in jobs_list %}
                 <option value="{{ j.id }}">{{ j.title[:30] }}</option>
@@ -17,7 +17,7 @@
             </select>
         </div>
         <div class="col-md-3">
-            <select name="status" class="form-select" onchange="this.form.submit()">
+            <select name="status" class="form-select" onchange="this.form.submit()" aria-label="اختر الحالة">
                 <option value="">كل الحالات</option>
                 <option value="pending">قيد المراجعة</option>
                 <option value="reviewed">تمت المراجعة</option>
@@ -33,7 +33,11 @@
             <div class="d-flex justify-content-between">
                 <div class="flex-grow-1">
                     <div class="d-flex align-items-center gap-2 mb-2">
+                        {% if app.avatar_url %}
+                        <img src="{{ app.avatar_url }}" class="avatar-img-sm" alt="{{ app.full_name }}">
+                        {% else %}
                         <div class="avatar-sm">{{ app.full_name[0] }}</div>
+                        {% endif %}
                         <div>
                             <h5 class="fw-bold mb-0">{{ app.full_name }}</h5>
                             <small class="text-muted">{{ app.job_title }}</small>

@@ -14,7 +14,7 @@
             <input type="text" name="search" class="form-control" placeholder="المسمى الوظيفي، المهارات..." value="{{ search }}">
         </div>
         <div class="col-md-2">
-            <select name="wilaya" class="form-select">
+            <select name="wilaya" class="form-select" aria-label="فلترة حسب الولاية">
                 <option value="">كل الولايات</option>
                 {% for w in wilayas %}
                 <option value="{{ w }}" {% if wilaya == w %}selected{% endif %}>{{ w }}</option>
@@ -22,7 +22,7 @@
             </select>
         </div>
         <div class="col-md-2">
-            <select name="category" class="form-select">
+            <select name="category" class="form-select" aria-label="فلترة حسب التخصص">
                 <option value="">كل التخصصات</option>
                 {% for c in categories %}
                 <option value="{{ c }}" {% if category == c %}selected{% endif %}>{{ c }}</option>
@@ -30,7 +30,7 @@
             </select>
         </div>
         <div class="col-md-2">
-            <select name="contract" class="form-select">
+            <select name="contract" class="form-select" aria-label="فلترة حسب نوع العقد">
                 <option value="">كل العقود</option>
                 {% for c in contract_types %}
                 <option value="{{ c }}" {% if contract == c %}selected{% endif %}>{{ c }}</option>
@@ -88,5 +88,21 @@
         </div>
         {% endfor %}
     </div>
+
+    {% if total_pages > 1 %}
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page > 1 %}
+            <li class="page-item"><a class="page-link" href="{{ url_for('jobs', page=page-1, search=search, wilaya=wilaya, category=category, contract=contract, sort=sort) }}">السابق</a></li>
+            {% endif %}
+            {% for p in range(1, total_pages + 1) %}
+            <li class="page-item {% if p == page %}active{% endif %}"><a class="page-link" href="{{ url_for('jobs', page=p, search=search, wilaya=wilaya, category=category, contract=contract, sort=sort) }}">{{ p }}</a></li>
+            {% endfor %}
+            {% if page < total_pages %}
+            <li class="page-item"><a class="page-link" href="{{ url_for('jobs', page=page+1, search=search, wilaya=wilaya, category=category, contract=contract, sort=sort) }}">التالي</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
 </div>
 {% endblock %}

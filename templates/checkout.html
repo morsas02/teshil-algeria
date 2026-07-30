@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}الدفع{% endblock %}
+{% block content %}
+<div class="container py-4" style="max-width:640px">
+  <div class="card p-4">
+    <h4 class="fw-bold mb-3"><i class="bi bi-credit-card text-primary"></i> إتمام الدفع</h4>
+    <div class="card bg-light p-3 mb-4">
+      <div class="d-flex justify-content-between align-items-center">
+        <span style="font-weight:600;">{{ package.name }}</span>
+        <span style="font-size:1.5rem;font-weight:800;color:var(--primary);">{{ package.price }} <small>دج</small></span>
+      </div>
+      <small class="text-muted">{{ package.credits }} رصيد - صالح لمدة {{ package.duration_days }} يوم</small>
+    </div>
+
+    <form method="POST" action="/employer/payment/create">
+      <input type="hidden" name="package_id" value="{{ package.id }}">
+      <button type="submit" class="btn btn-primary w-100 btn-lg mb-3">إنشاء طلب دفع</button>
+    </form>
+
+    <hr>
+    <h6 class="fw-bold mb-2"><i class="bi bi-info-circle"></i> طرق الدفع المتاحة</h6>
+    <div class="mb-2">
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <i class="bi bi-building" style="font-size:1.2rem;color:var(--primary);"></i>
+        <div>
+          <strong>CCP / بريد الجزائر</strong><br>
+          <small class="text-muted">قم بتحويل المبلغ إلى حساب CCP ثم ارفع الإيصال</small>
+        </div>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-phone" style="font-size:1.2rem;color:var(--primary);"></i>
+        <div>
+          <strong>BaridiMob / بريدي موب</strong><br>
+          <small class="text-muted">أرسل المبلغ عبر تطبيق بريدي موب وأرفق الإيصال</small>
+        </div>
+      </div>
+    </div>
+
+    {% if settings %}
+    <div class="alert alert-info mt-3">
+      <small>
+        {% if settings.payment_ccp_rib %}<strong>CCP RIB:</strong> {{ settings.payment_ccp_rib }}<br>{% endif %}
+        {% if settings.payment_ccp_name %}<strong>الاسم:</strong> {{ settings.payment_ccp_name }}<br>{% endif %}
+        {% if settings.payment_phone %}<strong>رقم الهاتف (BaridiMob):</strong> {{ settings.payment_phone }}<br>{% endif %}
+        {% if settings.payment_baridi %}<strong>رمز بريدي موب:</strong> {{ settings.payment_baridi }}{% endif %}
+      </small>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

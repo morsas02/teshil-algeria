@@ -22,7 +22,11 @@
                         <div>
                             <h3 class="fw-bold">{{ job.title }}</h3>
                             <div class="d-flex align-items-center gap-2 mb-2">
+                                {% if job.avatar_url %}
+                                <img src="{{ job.avatar_url }}" class="avatar-img-sm" alt="{{ job.company_name }}">
+                                {% else %}
                                 <div class="avatar-sm">{{ job.company_name[0] }}</div>
+                                {% endif %}
                                 <div>
                                     <strong class="d-block">{{ job.company_name }}</strong>
                                     <small class="text-muted"><i class="bi bi-geo-alt"></i> {{ job.wilaya }}</small>
@@ -87,7 +91,11 @@
                 <div class="card-body p-4">
                     <h5 class="fw-bold"><i class="bi bi-building"></i> عن المؤسسة</h5>
                     <div class="d-flex align-items-center mt-3">
+                        {% if job.avatar_url %}
+                        <img src="{{ job.avatar_url }}" class="avatar-img ms-3" alt="{{ job.company_name }}">
+                        {% else %}
                         <div class="avatar-md ms-3">{{ job.company_name[0] }}</div>
+                        {% endif %}
                         <div>
                             <h6 class="fw-bold mb-1">{{ job.company_name }}</h6>
                             {% if job.company_sector %}<small class="text-muted d-block"><i class="bi bi-tag"></i> {{ job.company_sector }}</small>{% endif %}

@@ -10,7 +10,11 @@
         <div class="col-md-4 mb-4">
             <div class="card h-100">
                 <div class="card-body text-center p-4">
+                    {% if w.avatar_url %}
+                    <img src="{{ w.avatar_url }}" class="avatar-img mx-auto mb-3" alt="{{ w.full_name }}">
+                    {% else %}
                     <div class="avatar-md mx-auto mb-3">{{ w.full_name[0] }}</div>
+                    {% endif %}
                     <h5 class="fw-bold">{{ w.full_name }}</h5>
                     <p class="text-muted small mb-2">
                         {% if w.wilaya %}<i class="bi bi-geo-alt"></i> {{ w.wilaya }}{% endif %}
