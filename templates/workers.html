@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}باحثون عن العمل{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div class="container"><h4 class="fw-bold mb-0"><i class="bi bi-people"></i> باحثون عن العمل</h4></div>
+</div>
+<div class="container py-4">
+    <div class="row">
+        {% for w in workers %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center p-4">
+                    <div class="avatar-md mx-auto mb-3">{{ w.full_name[0] }}</div>
+                    <h5 class="fw-bold">{{ w.full_name }}</h5>
+                    <p class="text-muted small mb-2">
+                        {% if w.wilaya %}<i class="bi bi-geo-alt"></i> {{ w.wilaya }}{% endif %}
+                        {% if w.experience_years %} | {{ w.experience_years }} سنة خبرة{% endif %}
+                    </p>
+                    {% if w.experience_level %}<span class="badge badge-algeria mb-2">{{ w.experience_level }}</span>{% endif %}
+                    {% if w.skills %}
+                    <div class="mt-2">
+                        {% for skill in w.skills.split(',')[:4] %}
+                        <span class="badge bg-light text-dark me-1">{{ skill.strip()[:15] }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    {% if w.about %}
+                    <p class="text-muted small mt-2">{{ w.about[:80] }}...</p>
+                    {% endif %}
+                    <div class="mt-3 pt-3 border-top">
+                        {% if w.availability %}
+                        <span class="badge {% if w.availability == 'متاح' %}bg-success{% else %}bg-secondary{% endif %}">
+                            {{ w.availability }}
+                        </span>
+                        {% endif %}
+                        {% if w.expected_salary %}
+                        <small class="d-block mt-1"><strong>الراتب المتوقع:</strong> {{ w.expected_salary }} دج</small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="empty-state">
+                <i class="bi bi-people"></i>
+                <h4>لا يوجد عمال مسجلون بعد</h4>
+                <p class="text-muted">سجل كباحث عن عمل لتظهر في نتائج البحث</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}إعدادات المنصة{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div class="container"><h4 class="fw-bold mb-0"><i class="bi bi-gear text-primary"></i> إعدادات المنصة</h4></div>
+</div>
+<div class="container py-4">
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="card p-4">
+                <h5 class="fw-bold mb-3"><i class="bi bi-sliders"></i> إعدادات النشر</h5>
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">سعر نشر الوظيفة (دج)</label>
+                        <input type="number" name="job_price" class="form-control form-control-lg" value="{{ settings.get('job_price', '1000') }}" min="0" step="100">
+                        <small class="text-muted">المبلغ الذي تدفعه المؤسسات لكل نشر وظيفة</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary">حفظ الإعدادات</button>
+                </form>
+            </div>
+            <div class="card p-4 mt-3">
+                <h6 class="text-muted">إحصائيات سريعة</h6>
+                <div class="row g-2">
+                    <div class="col-6"><small>إجمالي الوظائف:</small><br><strong>{{ stats.total_jobs }}</strong></div>
+                    <div class="col-6"><small>الوظائف النشطة:</small><br><strong>{{ stats.active_jobs }}</strong></div>
+                    <div class="col-6"><small>المستخدمين:</small><br><strong>{{ stats.total_workers + stats.total_employers }}</strong></div>
+                    <div class="col-6"><small>الطلبات:</small><br><strong>{{ stats.total_applications }}</strong></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-boxes"></i> باقات النشر</h5>
+                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addPackageModal">+ إضافة</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>الباقة</th>
+                                <th>الرصيد</th>
+                                <th>السعر</th>
+                                <th>المدة</th>
+                                <th>الحالة</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pkg in packages %}
+                            <tr>
+                                <td class="fw-bold">{{ pkg.name }}</td>
+                                <td>{{ pkg.credits }}</td>
+                                <td>{{ pkg.price }} دج</td>
+                                <td>{{ pkg.duration_days }} يوم</td>
+                                <td>
+                                    {% if pkg.is_active %}
+                                    <span class="badge bg-success">نشطة</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">معطلة</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <form method="POST" action="{{ url_for('admin_toggle_package', pid=pkg.id) }}" style="display:inline;">
+                                        <button class="btn btn-sm btn-outline-secondary">
+                                            {% if pkg.is_active %}<i class="bi bi-pause"></i>{% else %}<i class="bi bi-play"></i>{% endif %}
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addPackageModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">إضافة باقة جديدة</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/admin/packages/add">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">اسم الباقة</label>
+                        <input type="text" name="name" class="form-control" required placeholder="مثال: باقة الذهبية">
+                    </div>
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label">عدد الرصيد</label>
+                            <input type="number" name="credits" class="form-control" required min="1">
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">السعر (دج)</label>
+                            <input type="number" name="price" class="form-control" required min="0">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">مدة الصلاحية (أيام)</label>
+                        <input type="number" name="duration_days" class="form-control" value="365" min="1">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary w-100">إضافة الباقة</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

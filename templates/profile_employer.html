@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}ملف المؤسسة{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div class="container"><h4 class="fw-bold mb-0"><i class="bi bi-building"></i> ملف المؤسسة</h4></div>
+</div>
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body p-4">
+                    <form method="POST">
+                        <div class="text-center mb-4">
+                            <div class="avatar-md mx-auto mb-2">{{ user.company_name[0] if user.company_name else 'م' }}</div>
+                            <h5 class="fw-bold">{{ user.company_name or 'غير محدد' }}</h5>
+                            <p class="text-muted">{{ user.email }}</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">اسم المؤسسة *</label>
+                            <input type="text" name="company_name" class="form-control form-control-lg" value="{{ user.company_name or '' }}" required>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">حجم المؤسسة</label>
+                                <select name="company_size" class="form-select">
+                                    <option value="">اختر</option>
+                                    {% for s in ['1-10 موظف','11-50 موظف','51-200 موظف','201-500 موظف','+500 موظف'] %}
+                                    <option {% if user.company_size == s %}selected{% endif %}>{{ s }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">قطاع المؤسسة</label>
+                                <select name="company_sector" class="form-select">
+                                    <option value="">اختر</option>
+                                    {% for s in categories %}
+                                    <option {% if user.company_sector == s %}selected{% endif %}>{{ s }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">الولاية</label>
+                                <select name="wilaya" class="form-select">
+                                    <option value="">اختر</option>
+                                    {% for w in wilayas %}
+                                    <option value="{{ w }}" {% if user.wilaya == w %}selected{% endif %}>{{ w }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">المدينة</label>
+                                <input type="text" name="city" class="form-control" value="{{ user.city or '' }}">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">العنوان</label>
+                            <input type="text" name="address" class="form-control" value="{{ user.address or '' }}" placeholder="العنوان الكامل">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">الموقع الإلكتروني</label>
+                            <input type="url" name="company_website" class="form-control" value="{{ user.company_website or '' }}" placeholder="https://...">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">وصف المؤسسة</label>
+                            <textarea name="company_description" class="form-control" rows="5" placeholder="اكتب نبذة عن مؤسستك ونشاطها...">{{ user.company_description or '' }}</textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-lg w-100"><i class="bi bi-save"></i> حفظ التعديلات</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

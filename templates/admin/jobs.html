@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}إدارة الوظائف{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold"><i class="bi bi-briefcase text-primary"></i> إدارة الوظائف</h4>
+        <div class="btn-group">
+            <a href="?status=pending" class="btn btn-sm {{ 'btn-warning' if current_status == 'pending' else 'btn-outline-warning' }}">قيد المراجعة ({{ stats.pending_jobs }})</a>
+            <a href="?status=approved" class="btn btn-sm {{ 'btn-success' if current_status == 'approved' else 'btn-outline-success' }}">مقبولة</a>
+            <a href="?status=rejected" class="btn btn-sm {{ 'btn-danger' if current_status == 'rejected' else 'btn-outline-danger' }}">مرفوضة</a>
+            <a href="?status=closed" class="btn btn-sm {{ 'btn-secondary' if current_status == 'closed' else 'btn-outline-secondary' }}">مغلقة</a>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr><th>العنوان</th><th>الشركة</th><th>الولاية</th><th>النوع</th><th>مميز</th><th>التاريخ</th><th>إجراءات</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for job in jobs %}
+                        <tr>
+                            <td class="fw-bold">{{ job.title[:40] }}</td>
+                            <td>{{ job.company_name }}</td>
+                            <td>{{ job.wilaya }}</td>
+                            <td><span class="badge badge-algeria">{{ job.contract_type }}</span></td>
+                            <td>
+                                {% if job.is_featured %}<span class="badge bg-warning text-dark"><i class="bi bi-star-fill"></i></span>{% endif %}
+                            </td>
+                            <td><small>{{ job.created_at[:10] }}</small></td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    {% if current_status == 'pending' %}
+                                    <form method="POST" action="/admin/jobs/{{ job.id }}/approve" style="display:inline">
+                                        <button class="btn btn-success"><i class="bi bi-check"></i></button>
+                                    </form>
+                                    <form method="POST" action="/admin/jobs/{{ job.id }}/reject" style="display:inline">
+                                        <button class="btn btn-danger"><i class="bi bi-x"></i></button>
+                                    </form>
+                                    {% endif %}
+                                    <form method="POST" action="/admin/jobs/{{ job.id }}/feature" style="display:inline">
+                                        <button class="btn btn-warning btn-sm" title="تبديل المميز">
+                                            <i class="bi {% if job.is_featured %}bi-star-slash{% else %}bi-star{% endif %}"></i>
+                                        </button>
+                                    </form>
+                                    <a href="/jobs/{{ job.id }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-eye"></i></a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="7" class="text-center py-4 text-muted">لا توجد وظائف</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

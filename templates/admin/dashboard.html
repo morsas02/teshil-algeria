@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% block title %}لوحة التحكم{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold"><i class="bi bi-speedometer2 text-primary"></i> لوحة التحكم</h4>
+        <small class="text-muted">{{ now.strftime('%Y-%m-%d %H:%M') }}</small>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="fw-bold">الوظائف النشطة</h6>
+                            <h2 class="fw-bold mb-0">{{ stats.active_jobs }}</h2>
+                        </div>
+                        <i class="bi bi-briefcase display-6 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="fw-bold">باحثون عن عمل</h6>
+                            <h2 class="fw-bold mb-0">{{ stats.total_workers }}</h2>
+                        </div>
+                        <i class="bi bi-people display-6 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="fw-bold">أرباب عمل</h6>
+                            <h2 class="fw-bold mb-0">{{ stats.total_employers }}</h2>
+                        </div>
+                        <i class="bi bi-building display-6 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="fw-bold">طلبات التوظيف</h6>
+                            <h2 class="fw-bold mb-0">{{ stats.total_applications }}</h2>
+                        </div>
+                        <i class="bi bi-send display-6 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8 mb-4">
+            <div class="card">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0"><i class="bi bi-clock-history"></i> آخر الوظائف</h6>
+                    <a href="/admin/jobs" class="btn btn-sm btn-outline-primary">إدارة</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr><th>العنوان</th><th>الشركة</th><th>الحالة</th><th>التاريخ</th></tr>
+                            </thead>
+                            <tbody>
+                                {% for job in recent_jobs %}
+                                <tr>
+                                    <td>{{ job.title[:30] }}</td>
+                                    <td>{{ job.company_name }}</td>
+                                    <td>
+                                        <span class="badge {% if job.status == 'approved' %}bg-success{% elif job.status == 'pending' %}bg-warning text-dark{% elif job.status == 'rejected' %}bg-danger{% else %}bg-secondary{% endif %}">
+                                            {{ job.status }}
+                                        </span>
+                                    </td>
+                                    <td><small>{{ job.created_at[:10] }}</small></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header bg-white"><h6 class="fw-bold mb-0"><i class="bi bi-people"></i> آخر المستخدمين</h6></div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        {% for u in recent_users %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <small class="fw-bold">{{ u.full_name[:20] }}</small>
+                                <br><small class="text-muted">{{ u.email[:25] }}</small>
+                            </div>
+                            <span class="badge {% if u.user_type == 'worker' %}bg-primary{% elif u.user_type == 'employer' %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                                {{ u.user_type }}
+                            </span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-white"><h6 class="fw-bold mb-0"><i class="bi bi-bar-chart"></i> الوظائف حسب الولاية</h6></div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            {% for w in jobs_by_wilaya %}
+                            <tr><td>{{ w.wilaya }}</td><td><span class="badge badge-algeria">{{ w.count }}</span></td></tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-white"><h6 class="fw-bold mb-0"><i class="bi bi-pie-chart"></i> الوظائف حسب التخصص</h6></div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            {% for c in jobs_by_category %}
+                            <tr><td>{{ c.category }}</td><td><span class="badge badge-algeria">{{ c.count }}</span></td></tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-white d-flex justify-content-between">
+                    <h6 class="fw-bold mb-0"><i class="bi bi-envelope"></i> إجراءات سريعة</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex gap-2 flex-wrap">
+                        <a href="/admin/jobs?status=pending" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> مراجعة الوظائف ({{ stats.pending_jobs }})
+                        </a>
+                        <a href="/admin/users" class="btn btn-outline-primary"><i class="bi bi-people"></i> إدارة المستخدمين</a>
+                        <a href="/admin/messages" class="btn btn-outline-primary"><i class="bi bi-envelope"></i> الرسائل</a>
+                        <a href="/admin/applications" class="btn btn-outline-primary"><i class="bi bi-send"></i> جميع الطلبات</a>
+                        <a href="/admin/transactions" class="btn btn-outline-primary"><i class="bi bi-credit-card"></i> المعاملات</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}إدارة المعاملات{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div class="container"><h4 class="fw-bold mb-0"><i class="bi bi-credit-card text-primary"></i> إدارة المعاملات المالية</h4></div>
+</div>
+<div class="container py-4">
+    <div class="card p-4">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>المستخدم</th>
+                        <th>النوع</th>
+                        <th>المبلغ</th>
+                        <th>البيان</th>
+                        <th>الحالة</th>
+                        <th>التاريخ</th>
+                        <th>إجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in transactions %}
+                    <tr>
+                        <td>{{ t.id }}</td>
+                        <td>{{ t.full_name }}<br><small class="text-muted">{{ t.email }}</small></td>
+                        <td>
+                            {% if t.type == 'credit' %}
+                            <span class="badge bg-success">إيداع</span>
+                            {% else %}
+                            <span class="badge bg-danger">خصم</span>
+                            {% endif %}
+                        </td>
+                        <td class="fw-bold">{{ t.amount }}</td>
+                        <td style="font-size:0.85rem;">{{ t.description }}</td>
+                        <td>
+                            {% if t.status == 'completed' %}
+                            <span class="badge bg-success">مؤكدة</span>
+                            {% elif t.status == 'pending' %}
+                            <span class="badge bg-warning text-dark">قيد الانتظار</span>
+                            {% else %}
+                            <span class="badge bg-secondary">ملغاة</span>
+                            {% endif %}
+                        </td>
+                        <td style="font-size:0.8rem;">{{ t.created_at[:16] }}</td>
+                        <td>
+                            {% if t.status == 'pending' %}
+                            <form method="POST" action="{{ url_for('admin_handle_transaction', tid=t.id, action='confirm') }}" style="display:inline;">
+                                <button class="btn btn-sm btn-success" onclick="return confirm('تأكيد إضافة {{ t.amount }} رصيد لحساب {{ t.full_name }}؟')"><i class="bi bi-check-lg"></i></button>
+                            </form>
+                            <form method="POST" action="{{ url_for('admin_handle_transaction', tid=t.id, action='cancel') }}" style="display:inline;">
+                                <button class="btn btn-sm btn-secondary" onclick="return confirm('إلغاء المعاملة؟')"><i class="bi bi-x-lg"></i></button>
+                            </form>
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center py-4 text-muted">لا توجد معاملات بعد</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

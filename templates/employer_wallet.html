@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}المحفظة{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div class="container"><h4 class="fw-bold mb-0"><i class="bi bi-wallet2 text-primary"></i> محفظتي</h4></div>
+</div>
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-4 mb-4">
+            <div class="card text-center p-4">
+                <div style="font-size:0.85rem;color:var(--gray-500);font-weight:600;">الرصيد الحالي</div>
+                <div style="font-size:2.5rem;font-weight:800;color:var(--primary);">{{ balance }} <span style="font-size:1rem;font-weight:600;">دج</span></div>
+                <div style="font-size:0.85rem;color:var(--gray-500);">تكلفة نشر وظيفة واحدة: {{ job_price }} دج</div>
+                <div class="mt-3">
+                    <a href="#packages" class="btn btn-primary w-100 mb-2">اشترِ باقة</a>
+                    <button type="button" class="btn btn-outline-primary w-100" data-bs-toggle="modal" data-bs-target="#topupModal">شحن الرصيد</button>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-8 mb-4">
+            <div class="card p-4">
+                <h5 class="fw-bold mb-3">آخر المعاملات</h5>
+                {% if transactions %}
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>البيان</th>
+                                <th>المبلغ</th>
+                                <th>الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for t in transactions %}
+                            <tr>
+                                <td style="font-size:0.8rem;">{{ t.created_at[:10] }}</td>
+                                <td>{{ t.description }}</td>
+                                <td>
+                                    {% if t.type == 'credit' %}
+                                    <span class="text-success fw-bold">+{{ t.amount }}</span>
+                                    {% else %}
+                                    <span class="text-danger fw-bold">-{{ t.amount }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if t.status == 'completed' %}
+                                    <span class="badge bg-success">مؤكدة</span>
+                                    {% elif t.status == 'pending' %}
+                                    <span class="badge bg-warning text-dark">قيد الانتظار</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">ملغاة</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state py-4">
+                    <i class="bi bi-receipt"></i>
+                    <h5>لا توجد معاملات بعد</h5>
+                    <p class="text-muted">قم بشحن رصيدك أو شراء باقة للبدء</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="card p-4" id="packages">
+        <h5 class="fw-bold mb-3"><i class="bi bi-box-seam"></i> باقات النشر</h5>
+        <div class="row g-3">
+            {% for pkg in packages %}
+            <div class="col-md-3">
+                <div class="card text-center p-3 h-100" style="border:2px solid var(--gray-100);">
+                    {% if loop.index == 2 %}
+                    <span class="badge bg-warning text-dark position-absolute" style="top:-8px;left:50%;transform:translateX(-50%);font-size:0.7rem;">الأكثر مبيعاً</span>
+                    {% endif %}
+                    <h6 class="fw-bold mt-2">{{ pkg.name }}</h6>
+                    <div style="font-size:2rem;font-weight:800;color:var(--primary);">{{ pkg.price }} <span style="font-size:0.8rem;font-weight:600;">دج</span></div>
+                    <div style="font-size:0.9rem;color:var(--gray-500);">{{ pkg.credits }} رصيد</div>
+                    <div style="font-size:0.75rem;color:var(--gray-400);">صالح لمدة {{ pkg.duration_days }} يوم</div>
+                    <hr>
+                    <form method="POST" action="/employer/buy-package">
+                        <input type="hidden" name="package_id" value="{{ pkg.id }}">
+                        <button type="submit" class="btn btn-primary w-100 btn-sm">اشتر الآن</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="topupModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">شحن الرصيد</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/employer/topup">
+                <div class="modal-body">
+                    <label class="form-label">المبلغ (دج)</label>
+                    <input type="number" name="amount" class="form-control form-control-lg" min="100" step="100" required placeholder="أدخل المبلغ">
+                    <small class="text-muted">الحد الأدنى: 100 دج. سيتم تأكيد الدفع من الإدارة.</small>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary w-100">طلب شحن</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

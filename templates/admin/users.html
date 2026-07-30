@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}إدارة المستخدمين{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold"><i class="bi bi-people text-primary"></i> إدارة المستخدمين</h4>
+        <div>
+            <a href="?type=" class="btn btn-sm {{ 'btn-primary' if not user_type else 'btn-outline-primary' }}">الكل</a>
+            <a href="?type=worker" class="btn btn-sm {{ 'btn-primary' if user_type == 'worker' else 'btn-outline-primary' }}">عمال</a>
+            <a href="?type=employer" class="btn btn-sm {{ 'btn-primary' if user_type == 'employer' else 'btn-outline-primary' }}">أرباب عمل</a>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr><th>#</th><th>الاسم</th><th>البريد</th><th>النوع</th><th>موثق</th><th>الرصيد</th><th>التسجيل</th><th>إجراءات</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for u in users %}
+                        <tr>
+                            <td>{{ u.id }}</td>
+                            <td class="fw-bold">{{ u.full_name }}</td>
+                            <td><small>{{ u.email }}</small></td>
+                            <td>
+                                <span class="badge {% if u.user_type == 'worker' %}bg-primary{% elif u.user_type == 'employer' %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                                    {{ u.user_type }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if u.is_verified %}
+                                <span class="badge bg-success"><i class="bi bi-check"></i> موثق</span>
+                                {% else %}
+                                <span class="badge bg-secondary">غير موثق</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ u.wallet_balance or 0 }}</td>
+                            <td><small>{{ u.created_at[:10] }}</small></td>
+                            <td>
+                                {% if u.user_type == 'employer' %}
+                                <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#walletModal{{ u.id }}"><i class="bi bi-wallet2"></i></button>
+                                {% endif %}
+                                <form method="POST" action="/admin/users/{{ u.id }}/toggle-verify" style="display:inline">
+                                    <button class="btn btn-sm btn-outline-success">
+                                        {% if u.is_verified %}<i class="bi bi-x-circle"></i>{% else %}<i class="bi bi-check-circle"></i>{% endif %}
+                                    </button>
+                                </form>
+                                <form method="POST" action="/admin/users/{{ u.id }}/delete" style="display:inline" onsubmit="return confirm('حذف المستخدم؟')">
+                                    <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% for u in users %}
+{% if u.user_type == 'employer' %}
+<div class="modal fade" id="walletModal{{ u.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">تعديل رصيد: {{ u.full_name }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/admin/wallet/{{ u.id }}/adjust">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">الرصيد الحالي: <strong>{{ u.wallet_balance or 0 }} دج</strong></label>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">المبلغ (موجب للإضافة، سالب للخصم)</label>
+                        <input type="number" name="amount" class="form-control form-control-lg" required placeholder="مثال: 5000 أو -2000">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary w-100">تأكيد التعديل</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endfor %}
+
+{% endblock %}

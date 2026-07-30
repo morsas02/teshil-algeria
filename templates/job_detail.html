@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block title %}{{ job.title }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="/">الرئيسية</a></li>
+                <li class="breadcrumb-item"><a href="/jobs">الوظائف</a></li>
+                <li class="breadcrumb-item active">{{ job.title[:30] }}...</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <h3 class="fw-bold">{{ job.title }}</h3>
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <div class="avatar-sm">{{ job.company_name[0] }}</div>
+                                <div>
+                                    <strong class="d-block">{{ job.company_name }}</strong>
+                                    <small class="text-muted"><i class="bi bi-geo-alt"></i> {{ job.wilaya }}</small>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <span class="badge badge-algeria">{{ job.contract_type }}</span>
+                                {% if job.category %}<span class="badge bg-secondary">{{ job.category }}</span>{% endif %}
+                                {% if job.is_urgent %}<span class="badge bg-danger">عاجل</span>{% endif %}
+                                {% if job.is_featured %}<span class="badge bg-warning text-dark">مميز</span>{% endif %}
+                            </div>
+                        </div>
+                        <div class="text-start">
+                            {% if job.salary_min %}
+                            <h3 class="salary">{{ job.salary_min }}{% if job.salary_max %} - {{ job.salary_max }}{% endif %}</h3>
+                            <small class="text-muted">دينار جزائري / شهرياً</small>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <h5 class="fw-bold mt-4"><i class="bi bi-file-text"></i> وصف الوظيفة</h5>
+                    <p class="text-muted">{{ job.description }}</p>
+
+                    {% if job.responsibilities %}
+                    <h5 class="fw-bold mt-4"><i class="bi bi-check-circle"></i> المسؤوليات</h5>
+                    <p class="text-muted">{{ job.responsibilities }}</p>
+                    {% endif %}
+
+                    {% if job.requirements %}
+                    <h5 class="fw-bold mt-4"><i class="bi bi-list-check"></i> المتطلبات</h5>
+                    <p class="text-muted">{{ job.requirements }}</p>
+                    {% endif %}
+
+                    {% if job.benefits %}
+                    <h5 class="fw-bold mt-4"><i class="bi bi-gift"></i> المميزات</h5>
+                    <p class="text-muted">{{ job.benefits }}</p>
+                    {% endif %}
+
+                    <div class="d-flex gap-2 mt-4 pt-3 border-top">
+                        {% if session.user_id and session.user_type == 'worker' %}
+                            {% if has_applied %}
+                                <button class="btn btn-secondary" disabled><i class="bi bi-check-circle"></i> تم التقديم</button>
+                            {% else %}
+                                <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#applyModal">
+                                    <i class="bi bi-send"></i> تقدم الآن
+                                </button>
+                            {% endif %}
+                            <form method="POST" action="/jobs/{{ job.id }}/save">
+                                <button class="btn btn-lg {% if is_saved %}btn-success{% else %}btn-outline-primary{% endif %}">
+                                    <i class="bi {% if is_saved %}bi-bookmark-check{% else %}bi-bookmark{% endif %}"></i>
+                                    {% if is_saved %}محفوظ{% else %}حفظ{% endif %}
+                                </button>
+                            </form>
+                        {% elif not session.user_id %}
+                            <a href="/login" class="btn btn-primary btn-lg"><i class="bi bi-box-arrow-in-right"></i> سجل الدخول للتقديم</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold"><i class="bi bi-building"></i> عن المؤسسة</h5>
+                    <div class="d-flex align-items-center mt-3">
+                        <div class="avatar-md ms-3">{{ job.company_name[0] }}</div>
+                        <div>
+                            <h6 class="fw-bold mb-1">{{ job.company_name }}</h6>
+                            {% if job.company_sector %}<small class="text-muted d-block"><i class="bi bi-tag"></i> {{ job.company_sector }}</small>{% endif %}
+                            {% if job.company_size %}<small class="text-muted d-block"><i class="bi bi-people"></i> {{ job.company_size }}</small>{% endif %}
+                            {% if job.company_website %}<small><a href="{{ job.company_website }}" target="_blank" class="text-decoration-none"><i class="bi bi-globe"></i> {{ job.company_website }}</a></small>{% endif %}
+                            {% if job.company_description %}<p class="text-muted mt-2">{{ job.company_description[:300] }}</p>{% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="fw-bold mb-3">ملخص الوظيفة</h5>
+                    <table class="table table-sm table-borderless">
+                        <tr><td class="text-muted">النوع</td><td class="fw-bold">{{ job.contract_type or 'غير محدد' }}</td></tr>
+                        <tr><td class="text-muted">الولاية</td><td class="fw-bold">{{ job.wilaya or 'الجزائر' }}</td></tr>
+                        <tr><td class="text-muted">المستوى</td><td class="fw-bold">{{ job.experience_level or 'غير محدد' }}</td></tr>
+                        <tr><td class="text-muted">التخصص</td><td><span class="badge badge-algeria">{{ job.category or 'عام' }}</span></td></tr>
+                        <tr><td class="text-muted">الراتب</td><td class="fw-bold salary">{% if job.salary_min %}{{ job.salary_min }}{% if job.salary_max %} - {{ job.salary_max }}{% endif %} دج{% else %}غير محدد{% endif %}</td></tr>
+                        <tr><td class="text-muted">عدد المناصب</td><td class="fw-bold">{{ job.positions_count or 1 }}</td></tr>
+                        <tr><td class="text-muted">نشر في</td><td>{{ job.created_at[:10] }}</td></tr>
+                        <tr><td class="text-muted">المشاهدات</td><td>{{ job.views_count or 0 }}</td></tr>
+                    </table>
+                </div>
+            </div>
+
+            {% if similar %}
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="fw-bold mb-3">وظائف مشابهة</h5>
+                    {% for s in similar %}
+                    <div class="mb-3 pb-2 border-bottom">
+                        <h6><a href="/jobs/{{ s.id }}" class="text-decoration-none fw-bold">{{ s.title }}</a></h6>
+                        <small class="text-muted"><i class="bi bi-building"></i> {{ s.company_name }}</small>
+                        <br><small class="text-muted"><i class="bi bi-geo-alt"></i> {{ s.wilaya }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if session.user_id and session.user_type == 'worker' and not has_applied %}
+<div class="modal fade" id="applyModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="bi bi-send"></i> التقديم على {{ job.title }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/jobs/{{ job.id }}/apply">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">رسالة تحفيزية (اختياري)</label>
+                        <textarea name="cover_letter" class="form-control" rows="5" placeholder="اكتب رسالة قصيرة توضح فيها سبب اهتمامك بالوظيفة..."></textarea>
+                        <small class="text-muted">ستساعدك الرسالة في لفت انتباه صاحب العمل</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary btn-lg w-100"><i class="bi bi-send"></i> إرسال الطلب</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

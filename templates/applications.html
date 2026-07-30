@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}الطلبات{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <h4 class="fw-bold mb-0"><i class="bi bi-inbox"></i> طلبات التوظيف</h4>
+    </div>
+</div>
+<div class="container py-4">
+    <form class="row g-2 mb-4">
+        <div class="col-md-4">
+            <select name="job_id" class="form-select" onchange="this.form.submit()">
+                <option value="">كل الوظائف</option>
+                {% for j in jobs_list %}
+                <option value="{{ j.id }}">{{ j.title[:30] }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <select name="status" class="form-select" onchange="this.form.submit()">
+                <option value="">كل الحالات</option>
+                <option value="pending">قيد المراجعة</option>
+                <option value="reviewed">تمت المراجعة</option>
+                <option value="accepted">مقبول</option>
+                <option value="rejected">مرفوض</option>
+            </select>
+        </div>
+    </form>
+
+    {% for app in apps %}
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="d-flex justify-content-between">
+                <div class="flex-grow-1">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <div class="avatar-sm">{{ app.full_name[0] }}</div>
+                        <div>
+                            <h5 class="fw-bold mb-0">{{ app.full_name }}</h5>
+                            <small class="text-muted">{{ app.job_title }}</small>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-6">
+                            <small class="d-block"><i class="bi bi-telephone"></i> {{ app.phone or 'لا يوجد' }}</small>
+                            <small class="d-block"><i class="bi bi-envelope"></i> {{ app.email }}</small>
+                        </div>
+                        <div class="col-md-6">
+                            {% if app.skills %}<small class="d-block"><strong>المهارات:</strong> {{ app.skills[:80] }}</small>{% endif %}
+                            {% if app.experience_years %}<small class="d-block"><strong>الخبرة:</strong> {{ app.experience_years }} سنوات</small>{% endif %}
+                            {% if app.education %}<small class="d-block"><strong>التعليم:</strong> {{ app.education }}</small>{% endif %}
+                        </div>
+                    </div>
+                    {% if app.cover_letter %}
+                    <div class="mt-2 p-3 bg-light rounded">
+                        <small class="fw-bold">رسالة المتقدم:</small>
+                        <p class="text-muted small mb-0">{{ app.cover_letter }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="text-start" style="min-width:120px">
+                    <span class="badge d-block mb-2 {% if app.status == 'pending' %}bg-warning text-dark{% elif app.status == 'reviewed' %}bg-info{% elif app.status == 'accepted' %}bg-success{% else %}bg-danger{% endif %}">
+                        {% if app.status == 'pending' %}قيد المراجعة{% elif app.status == 'reviewed' %}تمت المراجعة{% elif app.status == 'accepted' %}مقبول{% else %}مرفوض{% endif %}
+                    </span>
+                    {% if app.status == 'pending' or app.status == 'reviewed' %}
+                    <form method="POST" action="/applications/{{ app.id }}/accepted" style="display:inline">
+                        <button class="btn btn-sm btn-success w-100 mb-1"><i class="bi bi-check"></i> قبول</button>
+                    </form>
+                    <form method="POST" action="/applications/{{ app.id }}/rejected" style="display:inline">
+                        <button class="btn btn-sm btn-danger w-100"><i class="bi bi-x"></i> رفض</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-inbox"></i>
+        <h4>لا توجد طلبات</h4>
+        <p class="text-muted">عندما يتقدم أحدهم لوظيفتك ستظهر الطلبات هنا</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

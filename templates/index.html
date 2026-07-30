@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+{% block title %}الرئيسية{% endblock %}
+{% block content %}
+
+<section class="hero-section">
+    <div class="container position-relative">
+        <div class="row align-items-center">
+            <div class="col-lg-7">
+                <h1>ابحث عن <span style="color: #6ee7b7;">الوظيفة المناسبة</span><br>لمستقبلك المهني</h1>
+                <p class="mb-4" style="font-size:1.15rem;opacity:0.85;line-height:1.7;">أكبر منصة توظيف جزائرية تجمع بين الباحثين عن العمل وأرباب العمل. تصفح آلاف الوظائف في جميع التخصصات والمناطق.</p>
+                <form action="/jobs" method="GET" class="search-box d-flex">
+                    <i class="bi bi-search d-flex align-items-center me-2 text-muted"></i>
+                    <input type="text" name="search" class="form-control" placeholder="المسمى الوظيفي، المهارات...">
+                    <select name="wilaya" class="form-select" style="max-width:140px">
+                        <option value="">كل الولايات</option>
+                        {% for w in wilayas %}
+                        <option value="{{ w }}">{{ w }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="btn btn-primary px-4">بحث</button>
+                </form>
+                <div class="mt-4 d-flex align-items-center gap-2 flex-wrap">
+                    <span style="font-size:0.85rem;opacity:0.7;">الأكثر بحثاً:</span>
+                    <a href="/jobs?search=مطور" class="badge bg-white text-dark text-decoration-none px-3 py-1 opacity-75">مطور</a>
+                    <a href="/jobs?search=مهندس" class="badge bg-white text-dark text-decoration-none px-3 py-1 opacity-75">مهندس</a>
+                    <a href="/jobs?search=محاسب" class="badge bg-white text-dark text-decoration-none px-3 py-1 opacity-75">محاسب</a>
+                    <a href="/jobs?search=تسويق" class="badge bg-white text-dark text-decoration-none px-3 py-1 opacity-75">تسويق</a>
+                </div>
+            </div>
+            <div class="col-lg-5 d-none d-lg-flex justify-content-center">
+                <div style="width:280px;height:280px;border-radius:50%;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.1);">
+                    <div style="width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;">
+                        <i class="bi bi-briefcase" style="font-size:5rem;opacity:0.3;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="container" style="margin-top:-60px;position:relative;z-index:10;">
+    <div class="stat-grid">
+        <div class="stat-card">
+            <div class="number">{{ stats.active_jobs }}</div>
+            <div class="label">وظيفة نشطة</div>
+        </div>
+        <div class="stat-card">
+            <div class="number">{{ stats.total_workers }}</div>
+            <div class="label">باحث عن عمل</div>
+        </div>
+        <div class="stat-card">
+            <div class="number">{{ stats.total_employers }}</div>
+            <div class="label">مؤسسة</div>
+        </div>
+        <div class="stat-card">
+            <div class="number">{{ stats.total_applications }}</div>
+            <div class="label">طلب توظيف</div>
+        </div>
+    </div>
+</div>
+
+{% if urgent %}
+<section class="container py-4">
+    <div class="d-flex justify-content-between align-items-center">
+        <h4 class="section-title"><i class="bi bi-exclamation-triangle text-danger"></i> وظائف عاجلة</h4>
+        <a href="/jobs?sort=newest" class="btn btn-sm btn-outline-primary">عرض الكل</a>
+    </div>
+    <div class="row">
+        {% for job in urgent %}
+        <div class="col-md-4 mb-3">
+            <div class="card job-card position-relative">
+                <span class="badge bg-danger feature-badge">عاجل</span>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="fw-bold mb-0">{{ job.title }}</h6>
+                        {% if job.salary_min %}
+                        <small class="salary">{{ job.salary_min }}{% if job.salary_max %}-{{ job.salary_max }}{% endif %} دج</small>
+                        {% endif %}
+                    </div>
+                    <small class="company d-block mb-1"><i class="bi bi-building"></i> {{ job.company_name }}</small>
+                    <small class="text-muted d-block mb-2"><i class="bi bi-geo-alt"></i> {{ job.wilaya }} | {{ job.contract_type }}</small>
+                    <a href="/jobs/{{ job.id }}" class="btn btn-sm btn-outline-primary w-100">التفاصيل</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<section class="container py-4">
+    <div class="d-flex justify-content-between align-items-center">
+        <h4 class="section-title"><i class="bi bi-star-fill text-warning"></i> وظائف مميزة</h4>
+        <a href="/jobs" class="btn btn-sm btn-outline-primary">عرض الكل</a>
+    </div>
+    <div class="row">
+        {% for job in featured %}
+        <div class="col-md-4 mb-4">
+            <div class="card job-card h-100">
+                {% if job.is_featured %}<span class="badge bg-warning text-dark feature-badge"><i class="bi bi-star-fill"></i> مميز</span>{% endif %}
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="badge badge-algeria">{{ job.contract_type }}</span>
+                        {% if job.salary_min %}
+                        <span class="salary">{{ job.salary_min }}{% if job.salary_max %} - {{ job.salary_max }}{% endif %} دج</span>
+                        {% endif %}
+                    </div>
+                    <h5 class="fw-bold">{{ job.title }}</h5>
+                    <p class="company mb-1"><i class="bi bi-building"></i> {{ job.company_name }}</p>
+                    <p class="text-muted small mb-2">
+                        <i class="bi bi-geo-alt"></i> {{ job.wilaya or 'الجزائر' }}
+                        {% if job.category %}<span class="mx-2">|</span><i class="bi bi-tag"></i> {{ job.category }}{% endif %}
+                    </p>
+                    <p class="card-text text-muted small">{{ job.description[:120] }}...</p>
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <small class="text-muted"><i class="bi bi-clock"></i> {{ job.created_at[:10] }}</small>
+                        <a href="/jobs/{{ job.id }}" class="btn btn-sm btn-primary">التفاصيل</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12 text-center py-4">
+            <i class="bi bi-briefcase" style="font-size:3rem;color:#ccc;"></i>
+            <p class="text-muted mt-2">لا توجد وظائف مميزة حالياً</p>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="bg-light py-5">
+    <div class="container">
+        <h4 class="section-title text-center" style="text-align:center !important;">أحدث الوظائف</h4>
+        <div class="row">
+            {% for job in recent %}
+            <div class="col-md-4 mb-4">
+                <div class="card job-card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="badge badge-algeria">{{ job.contract_type }}</span>
+                            {% if job.salary_min %}
+                            <span class="salary">{{ job.salary_min }}{% if job.salary_max %} - {{ job.salary_max }}{% endif %} دج</span>
+                            {% endif %}
+                        </div>
+                        <h5 class="fw-bold">{{ job.title }}</h5>
+                        <p class="company mb-1"><i class="bi bi-building"></i> {{ job.company_name }}</p>
+                        <p class="text-muted small mb-2">
+                            <i class="bi bi-geo-alt"></i> {{ job.wilaya or 'الجزائر' }}
+                        </p>
+                        <p class="card-text text-muted small">{{ job.description[:120] }}...</p>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <small class="text-muted"><i class="bi bi-clock"></i> {{ job.created_at[:10] }}</small>
+                            <a href="/jobs/{{ job.id }}" class="btn btn-sm btn-outline-primary">التفاصيل</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="col-12 text-center py-5">
+                <i class="bi bi-inbox" style="font-size:3rem;color:#ccc;"></i>
+                <h5 class="text-muted mt-3">لا توجد وظائف مضافة بعد</h5>
+                <p>كن أول من يضيف وظيفة!</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+{% if top_employers %}
+<section class="container py-5">
+    <h4 class="section-title"><i class="bi bi-building"></i> أفضل المؤسسات</h4>
+    <div class="row">
+        {% for e in top_employers %}
+        <div class="col-md-3 mb-3">
+            <div class="card text-center p-3 h-100">
+                <div class="avatar-md mx-auto mb-2">{{ e.company_name[0] }}</div>
+                <h6 class="fw-bold mb-1">{{ e.company_name }}</h6>
+                <small class="text-muted">{{ e.job_count }} وظيفة</small>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<section class="py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h4 class="fw-bold" style="font-size:1.5rem;">لماذا تسهيل؟</h4>
+            <p style="color:var(--gray-500);font-size:1.05rem;">المنصة الأكثر تطوراً للتوظيف في الجزائر</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="icon-wrap"><i class="bi bi-shield-check"></i></div>
+                    <h5 class="fw-bold">آمن وموثوق</h5>
+                    <p style="color:var(--gray-500);font-size:0.9rem;">جميع الحسابات موثقة وتخضع للتحقق لضمان تجربة آمنة</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="icon-wrap"><i class="bi bi-lightning-charge"></i></div>
+                    <h5 class="fw-bold">سهل وسريع</h5>
+                    <p style="color:var(--gray-500);font-size:0.9rem;">قدم على الوظائف بنقرة واحدة وتابع حالة طلباتك لحظة بلحظة</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="icon-wrap"><i class="bi bi-graph-up-arrow"></i></div>
+                    <h5 class="fw-bold">تطور مستمر</h5>
+                    <p style="color:var(--gray-500);font-size:0.9rem;">نطور المنصة باستمرار لتقديم أفضل تجربة توظيف إلكتروني</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="py-5" style="background: linear-gradient(135deg, var(--gray-900), #064e3b);">
+    <div class="container text-center">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <h4 class="fw-bold text-white" style="font-size:1.5rem;">هل أنت صاحب عمل؟</h4>
+                <p class="mb-4" style="color:rgba(255,255,255,0.7);font-size:1.1rem;">انشر وظائفك مجاناً واعثر على أفضل الكفاءات المناسبة لمؤسستك</p>
+                <div class="d-flex justify-content-center gap-3 flex-wrap">
+                    <a href="/register?type=employer" class="btn btn-light btn-lg px-5 fw-bold">انشر وظيفة الآن</a>
+                    <a href="/jobs" class="btn btn-outline-light btn-lg px-4">تصفح الوظائف</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

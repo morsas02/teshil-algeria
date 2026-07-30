@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}تسجيل جديد{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <i class="bi bi-person-plus display-4 text-primary"></i>
+                        <h4 class="fw-bold mt-2">إنشاء حساب جديد</h4>
+                        <p class="text-muted">انضم إلى آلاف الباحثين عن العمل وأرباب العمل</p>
+                    </div>
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label class="form-label">الاسم الكامل *</label>
+                            <input type="text" name="full_name" class="form-control form-control-lg" required>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">البريد الإلكتروني *</label>
+                                <input type="email" name="email" class="form-control" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">رقم الهاتف</label>
+                                <input type="tel" name="phone" class="form-control" placeholder="05XXXXXXXX">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">كلمة المرور *</label>
+                                <input type="password" name="password" class="form-control" minlength="6" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">تأكيد كلمة المرور *</label>
+                                <input type="password" name="confirm_password" class="form-control" minlength="6" required>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label">نوع الحساب *</label>
+                            <div class="d-flex gap-4 mt-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="user_type" value="worker" id="worker" {{ 'checked' if request.args.get('type') != 'employer' else '' }}>
+                                    <label class="form-check-label fw-bold" for="worker"><i class="bi bi-person"></i> باحث عن عمل</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="user_type" value="employer" id="employer" {{ 'checked' if request.args.get('type') == 'employer' else '' }}>
+                                    <label class="form-check-label fw-bold" for="employer"><i class="bi bi-building"></i> أرباب عمل</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-4 employer-only" style="display:{{ 'none' if request.args.get('type') != 'employer' else 'block' }}">
+                            <label class="form-label">اسم المؤسسة / الشركة</label>
+                            <input type="text" name="company_name" class="form-control" placeholder="اسم الشركة">
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-lg w-100">تسجيل <i class="bi bi-check-lg"></i></button>
+                    </form>
+                    <hr class="my-3">
+                    <div class="d-flex gap-2">
+                        <a href="/login/google" class="btn btn-outline-dark w-50 d-flex align-items-center justify-content-center gap-2">
+                            <i class="bi bi-google"></i> Google
+                        </a>
+                        <a href="/login/facebook" class="btn btn-outline-primary w-50 d-flex align-items-center justify-content-center gap-2">
+                            <i class="bi bi-facebook"></i> Facebook
+                        </a>
+                    </div>
+                    <div class="text-center mt-3">
+                        <small>لديك حساب؟ <a href="/login" class="fw-bold">تسجيل دخول</a></small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+document.querySelectorAll('input[name="user_type"]').forEach(r => {
+    r.addEventListener('change', function() {
+        document.querySelector('.employer-only').style.display = this.value === 'employer' ? 'block' : 'none';
+    });
+});
+</script>
+{% endblock %}
