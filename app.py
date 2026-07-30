@@ -67,7 +67,7 @@ def not_found(e):
 def internal_error(e):
     tb = traceback.format_exc()
     print(tb)
-    return f'<pre>500: {e}\n{tb}</pre>', 500
+    return render_template('500.html', tb=tb), 500
 
 ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', 'admin@ta9eef.dz')
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123456')
