@@ -65,10 +65,8 @@ def not_found(e):
 
 @app.errorhandler(500)
 def internal_error(e):
-    tb = traceback.format_exc()
-    print(tb)
-    print(repr(e))
-    return f'<h1>500 Error</h1><pre>{tb}</pre>', 500
+    traceback.print_exc()
+    return render_template('500.html'), 500
 
 ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', 'admin@ta9eef.dz')
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123456')
@@ -134,13 +132,14 @@ class DB:
     _pool = None
 
     def __init__(self):
+        self._closed = False
         self._url = os.environ.get('DATABASE_URL', '')
         if self._url:
             import psycopg2
             from psycopg2.extras import RealDictCursor
             from psycopg2.pool import ThreadedConnectionPool
             if DB._pool is None:
-                DB._pool = ThreadedConnectionPool(1, 4, self._url, cursor_factory=RealDictCursor)
+                DB._pool = ThreadedConnectionPool(1, 8, self._url, cursor_factory=RealDictCursor)
             self._conn = DB._pool.getconn()
         else:
             self._conn = sqlite3.connect(DB_PATH, timeout=15)
@@ -149,6 +148,15 @@ class DB:
             self._conn.execute("PRAGMA synchronous=NORMAL")
             self._conn.execute("PRAGMA busy_timeout=10000")
             self._conn.execute("PRAGMA foreign_keys=ON")
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+    def __del__(self):
+        self.close()
 
     def execute(self, sql, params=None):
         sql = sql.replace('%s', '?') if not self._url else sql
@@ -184,10 +192,14 @@ class DB:
         self._conn.commit()
 
     def close(self):
+        if self._closed:
+            return
+        self._closed = True
         if self._url and DB._pool:
             DB._pool.putconn(self._conn)
         else:
             self._conn.close()
+
 
 def get_db():
     return DB()
@@ -1107,8 +1119,7 @@ def jobs():
 @app.route('/jobs/<int:job_id>')
 @login_required
 def job_detail(job_id):
-    try:
-        conn = get_db()
+    with get_db() as conn:
         job = conn.execute('''
             SELECT j.*, e.company_name, e.company_size, e.company_sector,
                    e.city as e_city, e.wilaya as e_wilaya,
@@ -1160,11 +1171,7 @@ def job_detail(job_id):
                 ).fetchone())
 
         conn.commit()
-        conn.close()
-        return render_template('job_detail.html', job=job, similar=similar, has_applied=has_applied, is_saved=is_saved)
-    except Exception as e:
-        tb = traceback.format_exc()
-        return f'<h1>Error in job_detail</h1><pre>{tb}</pre>', 500
+    return render_template('job_detail.html', job=job, similar=similar, has_applied=has_applied, is_saved=is_saved)
 
 @app.route('/jobs/create', methods=['GET', 'POST'])
 @employer_required
