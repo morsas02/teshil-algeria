@@ -184,20 +184,27 @@
         .pagination .page-link { color: var(--primary); border: none; padding: 8px 14px; border-radius: 8px; margin: 0 2px; font-weight: 500; transition: all 0.2s; }
         .pagination .page-item.active .page-link { background: var(--primary); color: #fff; }
         .page-item.disabled .page-link { color: var(--gray-300); }
-        .page-loader { position: fixed; inset: 0; z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(135deg, #064e3b, #059669, #10b981); opacity: 0; pointer-events: none; transition: opacity 0.35s ease; }
+        .page-loader { position: fixed; inset: 0; z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(135deg, #064e3b 0%, #059669 50%, #10b981 100%); background-size: 200% 200%; animation: loaderBg 4s ease infinite; opacity: 0; pointer-events: none; transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         .page-loader.show { opacity: 1; pointer-events: all; }
-        .page-loader .loader-brand { font-size: 2.8rem; font-weight: 800; color: #fff; letter-spacing: -1px; }
-        .page-loader .loader-brand .dot { display: inline-block; width: 10px; height: 10px; background: #fff; border-radius: 50%; margin: 0 3px; animation: loaderPulse 1.2s ease-in-out infinite; }
-        .page-loader .loader-bar { width: 140px; height: 3px; background: rgba(255,255,255,0.2); border-radius: 4px; margin-top: 24px; overflow: hidden; }
-        .page-loader .loader-bar span { display: block; height: 100%; width: 30%; background: #fff; border-radius: 4px; animation: loaderSlide 1.2s ease-in-out infinite; }
-        @keyframes loaderPulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.8); } }
-        @keyframes loaderSlide { 0% { transform: translateX(-100%); } 100% { transform: translateX(430%); } }
+        .page-loader .loader-icon { width: 64px; height: 64px; border-radius: 18px; background: rgba(255,255,255,0.12); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; margin-bottom: 20px; animation: loaderIcon 2s ease-in-out infinite; border: 1px solid rgba(255,255,255,0.15); }
+        .page-loader .loader-icon i { font-size: 2rem; color: #fff; }
+        .page-loader .loader-brand { font-size: 2.2rem; font-weight: 800; color: #fff; letter-spacing: -1px; display: flex; align-items: center; gap: 4px; }
+        .page-loader .loader-brand .dot { display: inline-block; width: 10px; height: 10px; background: #fff; border-radius: 50%; animation: loaderDot 1.4s ease-in-out infinite; }
+        .page-loader .loader-sub { color: rgba(255,255,255,0.6); font-size: 0.85rem; margin-top: 8px; font-weight: 500; letter-spacing: 1px; }
+        .page-loader .loader-ring { width: 48px; height: 48px; margin-top: 28px; position: relative; }
+        .page-loader .loader-ring::before { content: ''; position: absolute; inset: 0; border-radius: 50%; border: 3px solid rgba(255,255,255,0.15); border-top-color: #fff; animation: loaderSpin 0.9s linear infinite; }
+        @keyframes loaderBg { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+        @keyframes loaderIcon { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-6px) scale(1.04); } }
+        @keyframes loaderDot { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(0.6); } }
+        @keyframes loaderSpin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 <div class="page-loader" id="pageLoader">
+    <div class="loader-icon"><i class="bi bi-briefcase-fill"></i></div>
     <div class="loader-brand">تسهيل<span class="dot"></span></div>
-    <div class="loader-bar"><span></span></div>
+    <div class="loader-sub">منصة التوظيف الجزائرية</div>
+    <div class="loader-ring"></div>
 </div>
     <div class="top-bar">
         <div class="container d-flex justify-content-between align-items-center">
