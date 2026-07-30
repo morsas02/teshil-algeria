@@ -404,7 +404,7 @@
     </script>
     {% block scripts %}{% endblock %}
     <script>document.querySelectorAll('form[method="POST"]').forEach(function(f){var i=document.createElement('input');i.type='hidden';i.name='csrf_token';i.value='{{ session.csrf_token }}';f.appendChild(i)})
-    window.addEventListener('pageshow',function(){var l=document.getElementById('pageLoader');if(l){l.classList.remove('hide');setTimeout(function(){l.classList.add('hide')},600)}});var l=document.getElementById('pageLoader');if(l){var links=document.querySelectorAll('a:not([target="_blank"]):not([href^="#"]):not([href^="javascript"]):not([href^="mailto"]):not([href^="tel"]):not([href^="http"])');links.forEach(function(a){a.addEventListener('click',function(){l.classList.remove('hide')})})}
+    !function(){var l=document.getElementById('pageLoader');if(!l)return;setTimeout(function(){l.classList.add('hide')},700);var links=document.querySelectorAll('a:not([target="_blank"]):not([href^="#"]):not([href^="javascript"]):not([href^="mailto"]):not([href^="tel"]):not([href^="http"])');links.forEach(function(a){a.addEventListener('click',function(){l.classList.remove('hide')})})}();
     </script>
 </body>
 </html>
