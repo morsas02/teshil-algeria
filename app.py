@@ -1439,6 +1439,61 @@ def admin_toggle_package(pid):
     conn.close()
     return redirect(url_for('admin_settings'))
 
+@app.route('/robots.txt')
+def robots_txt():
+    base = request.url_root.rstrip('/')
+    return f'''User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /login/
+Disallow: /register/
+Disallow: /forgot-password/
+Disallow: /reset-password/
+Disallow: /employer/wallet/
+Disallow: /profile/
+Disallow: /my-jobs/
+Disallow: /my-applications/
+Disallow: /saved-jobs/
+Disallow: /notifications/
+Sitemap: {base}/sitemap.xml
+''', 200, {'Content-Type': 'text/plain'}
+
+@app.route('/sitemap.xml')
+def sitemap_xml():
+    base = request.url_root.rstrip('/')
+    today = datetime.utcnow().strftime('%Y-%m-%d')
+    urls = [
+        ('/', 'daily', '1.0'),
+        ('/about', 'monthly', '0.8'),
+        ('/faq', 'monthly', '0.7'),
+        ('/contact', 'monthly', '0.6'),
+        ('/terms', 'monthly', '0.5'),
+        ('/jobs', 'weekly', '0.9'),
+        ('/workers', 'weekly', '0.7'),
+    ]
+    xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    for path, freq, priority in urls:
+        xml += f'''  <url>
+    <loc>{base}{path}</loc>
+    <lastmod>{today}</lastmod>
+    <changefreq>{freq}</changefreq>
+    <priority>{priority}</priority>
+  </url>\n'''
+    conn = get_db()
+    jobs = conn.execute('SELECT id, updated_at FROM jobs WHERE status = ? ORDER BY id', ('approved',)).fetchall()
+    conn.close()
+    for job in jobs:
+        updated = job['updated_at'][:10] if job['updated_at'] else today
+        xml += f'''  <url>
+    <loc>{base}/job/{job['id']}</loc>
+    <lastmod>{updated}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>\n'''
+    xml += '</urlset>'
+    return xml, 200, {'Content-Type': 'application/xml'}
+
 @app.route('/static/<path:path>')
 def serve_static(path):
     return send_from_directory('static', path)

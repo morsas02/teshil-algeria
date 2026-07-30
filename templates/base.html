@@ -3,8 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="{% block meta_desc %}تسهيل - منصة التوظيف الجزائرية الأولى. ابحث عن وظائف في جميع ولايات الجزائر أو انشر فرص العمل بسهولة.{% endblock %}">
+    <meta name="keywords" content="{% block meta_keywords %}وظائف الجزائر, توظيف, عمل, تسهيل, منصة توظيف, وظائف في الجزائر, ta9eef, teshil, emploi Algerie, recrutement{% endblock %}">
+    <meta name="author" content="تسهيل">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="{{ request.url.rstrip('?') if request.url else '' }}">
+    {% set current_lang = session.get('lang', 'ar') %}
+    <link rel="alternate" hreflang="ar" href="{{ request.url_root.rstrip('/') }}{{ request.path }}?lang=ar">
+    <link rel="alternate" hreflang="fr" href="{{ request.url_root.rstrip('/') }}{{ request.path }}?lang=fr">
+    <link rel="alternate" hreflang="x-default" href="{{ request.url_root.rstrip('/') }}{{ request.path }}">
+    <meta property="og:title" content="{% block og_title %}تسهيل - منصة التوظيف الجزائرية{% endblock %}">
+    <meta property="og:description" content="{% block og_desc %}منصة التوظيف الأولى في الجزائر. وظائف في جميع الولايات، لربط الباحثين عن العمل بأرباب العمل.{% endblock %}">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ request.url.rstrip('?') if request.url else '' }}">
+    <meta property="og:site_name" content="تسهيل">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{% block tw_title %}تسهيل - منصة التوظيف الجزائرية{% endblock %}">
+    <meta name="twitter:description" content="{% block tw_desc %}منصة التوظيف الأولى في الجزائر. وظائف في جميع الولايات.{% endblock %}">
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "تسهيل",
+        "alternateName": "Teshil",
+        "url": "{{ request.url_root.rstrip('/') }}",
+        "description": "منصة التوظيف الجزائرية الأولى",
+        "areaServed": "DZ",
+        "availableLanguage": ["Arabic", "French"]
+    }
+    </script>
     <title>تسهيل - {% block title %}منصة التوظيف{% endblock %}</title>
-    {% if session.get('lang','ar') == 'ar' %}
+    {% if current_lang == 'ar' %}
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
     {% else %}
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
