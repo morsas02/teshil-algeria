@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, send_from_directory, abort
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from datetime import datetime, timedelta
@@ -1497,6 +1497,12 @@ def sitemap_xml():
 @app.route('/static/<path:path>')
 def serve_static(path):
     return send_from_directory('static', path)
+
+@app.route('/<path:filename>')
+def serve_root_files(filename):
+    if filename.startswith('google') and filename.endswith('.html'):
+        return send_from_directory('static', filename)
+    abort(404)
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
