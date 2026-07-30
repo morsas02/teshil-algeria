@@ -847,7 +847,8 @@ def login():
         user = conn.execute('SELECT * FROM users WHERE email = %s', (email,)).fetchone()
         conn.close()
 
-        if user and user.get('is_active', 1) and check_password_hash(user['password'], password):
+        active = dict(user).get('is_active', 1)
+        if user and active and check_password_hash(user['password'], password):
             session.clear()
             session.permanent = True
             session['csrf_token'] = secrets.token_hex(32)
