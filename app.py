@@ -405,7 +405,7 @@ def init_db():
             ('job_price', str(JOB_PRICE))
         )
 
-    payment_defaults = {'payment_phone': '0670729307', 'payment_ccp_name': 'morsas02', 'payment_ccp_rib': '0028284754cle89', 'payment_baridi': ''}
+    payment_defaults = {'payment_phone': '+213670729307', 'payment_ccp_name': 'mosrsizitouni', 'payment_ccp_rib': '0028284754cle89', 'payment_baridi': ''}
     for k, v in payment_defaults.items():
         if is_pg:
             conn.execute(
