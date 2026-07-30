@@ -65,11 +65,10 @@ def not_found(e):
 
 @app.errorhandler(500)
 def internal_error(e):
-    traceback.print_exc()
-    if app.debug:
-        tb = traceback.format_exc()
-        return f'<h1>500 Error</h1><pre>{tb}</pre>', 500
-    return render_template('500.html'), 500
+    tb = traceback.format_exc()
+    print(tb)
+    print(repr(e))
+    return f'<h1>500 Error</h1><pre>{tb}</pre>', 500
 
 ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', 'admin@ta9eef.dz')
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123456')
