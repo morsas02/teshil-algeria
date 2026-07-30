@@ -242,12 +242,12 @@ def init_db():
     if not conn.execute('SELECT id FROM users WHERE email = ?', (ADMIN_EMAIL,)).fetchone():
         hashed = generate_password_hash(ADMIN_PASSWORD)
         conn.execute(
-            'INSERT INTO users (full_name, email, password, user_type, is_verified, wallet_balance) VALUES (?, ?, ?, ?, ?, ?)',
+            'INSERT OR IGNORE INTO users (full_name, email, password, user_type, is_verified, wallet_balance) VALUES (?, ?, ?, ?, ?, ?)',
             ('مدير المنصة', ADMIN_EMAIL, hashed, 'admin', 1, 999999)
         )
 
     if not conn.execute('SELECT key FROM settings WHERE key = ?', ('job_price',)).fetchone():
-        conn.execute('INSERT INTO settings (key, value) VALUES (?, ?)', ('job_price', str(JOB_PRICE)))
+        conn.execute('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)', ('job_price', str(JOB_PRICE)))
 
     default_packages = [
         ('باقة التجربة', 3, 2000, 30),
@@ -259,7 +259,7 @@ def init_db():
     if existing_count == 0:
         for name, credits, price, days in default_packages:
             conn.execute(
-                'INSERT INTO packages (name, credits, price, duration_days) VALUES (?, ?, ?, ?)',
+                'INSERT OR IGNORE INTO packages (name, credits, price, duration_days) VALUES (?, ?, ?, ?)',
                 (name, credits, price, days)
             )
 
