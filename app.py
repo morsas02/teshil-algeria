@@ -1121,66 +1121,68 @@ def jobs():
                          category=category, contract=contract, experience=experience,
                          sort=sort, page=page, total_pages=total_pages)
 
+@app.route('/_version')
+def version():
+    import os
+    sha = os.environ.get('RAILWAY_GIT_COMMIT_SHA', 'local-dev')[:7]
+    return f'<pre>GIT: {sha}\nSESSION_PERMANENT: {app.config.get("SESSION_PERMANENT")}\nPERMANENT_LIFETIME: {app.config.get("PERMANENT_SESSION_LIFETIME")}</pre>'
+
 @app.route('/jobs/<int:job_id>')
 @login_required
 def job_detail(job_id):
-    try:
-        with get_db() as conn:
-            job = conn.execute('''
-                SELECT j.*, e.company_name, e.company_size, e.company_sector,
-                       e.city as e_city, e.wilaya as e_wilaya,
-                       e.company_description, e.company_website, e.company_logo,
-                        u.full_name, u.phone, u.email, u.avatar_url
-                FROM jobs j JOIN employers e ON j.employer_id = e.id
-                JOIN users u ON e.user_id = u.id
-                WHERE j.id = %s
-            ''', (job_id,)).fetchone()
+    with get_db() as conn:
+        job = conn.execute('''
+            SELECT j.*, e.company_name, e.company_size, e.company_sector,
+                   e.city as e_city, e.wilaya as e_wilaya,
+                   e.company_description, e.company_website, e.company_logo,
+                    u.full_name, u.phone, u.email, u.avatar_url
+            FROM jobs j JOIN employers e ON j.employer_id = e.id
+            JOIN users u ON e.user_id = u.id
+            WHERE j.id = %s
+        ''', (job_id,)).fetchone()
 
-            if not job:
+        if not job:
+            flash('الوظيفة غير موجودة', 'danger')
+            return redirect(url_for('jobs'))
+
+        if job['status'] not in ('approved', 'pending'):
+            flash('الوظيفة غير موجودة', 'danger')
+            return redirect(url_for('jobs'))
+
+        if job['status'] == 'pending':
+            owner_id = conn.execute(
+                'SELECT user_id FROM employers WHERE id = %s',
+                (job['employer_id'],)
+            ).fetchone()
+            if not owner_id or owner_id['user_id'] != session['user_id']:
                 flash('الوظيفة غير موجودة', 'danger')
                 return redirect(url_for('jobs'))
 
-            if job['status'] not in ('approved', 'pending'):
-                flash('الوظيفة غير موجودة', 'danger')
-                return redirect(url_for('jobs'))
+        conn.execute('UPDATE jobs SET views_count = views_count + 1 WHERE id = %s', (job_id,))
 
-            if job['status'] == 'pending':
-                owner_id = conn.execute(
-                    'SELECT user_id FROM employers WHERE id = %s',
-                    (job['employer_id'],)
-                ).fetchone()
-                if not owner_id or owner_id['user_id'] != session['user_id']:
-                    flash('الوظيفة غير موجودة', 'danger')
-                    return redirect(url_for('jobs'))
+        similar = conn.execute('''
+            SELECT j.*, e.company_name, u.avatar_url FROM jobs j
+            JOIN employers e ON j.employer_id = e.id
+            WHERE j.category IS NOT NULL AND j.category = %s AND j.id != %s AND j.status = 'approved'
+            LIMIT 4
+        ''', (job['category'], job_id)).fetchall()
 
-            conn.execute('UPDATE jobs SET views_count = views_count + 1 WHERE id = %s', (job_id,))
+        has_applied = False
+        is_saved = False
+        if 'user_id' in session and session['user_type'] == 'worker':
+            worker = conn.execute('SELECT id FROM workers WHERE user_id = %s', (session['user_id'],)).fetchone()
+            if worker:
+                has_applied = bool(conn.execute(
+                    'SELECT id FROM applications WHERE job_id = %s AND worker_id = %s',
+                    (job_id, worker['id'])
+                ).fetchone())
+                is_saved = bool(conn.execute(
+                    'SELECT id FROM saved_jobs WHERE job_id = %s AND worker_id = %s',
+                    (job_id, worker['id'])
+                ).fetchone())
 
-            similar = conn.execute('''
-                SELECT j.*, e.company_name, u.avatar_url FROM jobs j
-                JOIN employers e ON j.employer_id = e.id
-                WHERE j.category IS NOT NULL AND j.category = %s AND j.id != %s AND j.status = 'approved'
-                LIMIT 4
-            ''', (job['category'], job_id)).fetchall()
-
-            has_applied = False
-            is_saved = False
-            if 'user_id' in session and session['user_type'] == 'worker':
-                worker = conn.execute('SELECT id FROM workers WHERE user_id = %s', (session['user_id'],)).fetchone()
-                if worker:
-                    has_applied = bool(conn.execute(
-                        'SELECT id FROM applications WHERE job_id = %s AND worker_id = %s',
-                        (job_id, worker['id'])
-                    ).fetchone())
-                    is_saved = bool(conn.execute(
-                        'SELECT id FROM saved_jobs WHERE job_id = %s AND worker_id = %s',
-                        (job_id, worker['id'])
-                    ).fetchone())
-
-            conn.commit()
-        return render_template('job_detail.html', job=job, similar=similar, has_applied=has_applied, is_saved=is_saved)
-    except Exception as e:
-        import traceback
-        return f'<pre>Exception: {e}\n{traceback.format_exc()}</pre>', 500
+        conn.commit()
+    return render_template('job_detail.html', job=job, similar=similar, has_applied=has_applied, is_saved=is_saved)
 
 @app.route('/jobs/create', methods=['GET', 'POST'])
 @employer_required
