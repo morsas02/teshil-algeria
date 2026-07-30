@@ -184,9 +184,21 @@
         .pagination .page-link { color: var(--primary); border: none; padding: 8px 14px; border-radius: 8px; margin: 0 2px; font-weight: 500; transition: all 0.2s; }
         .pagination .page-item.active .page-link { background: var(--primary); color: #fff; }
         .page-item.disabled .page-link { color: var(--gray-300); }
+        .page-loader { position: fixed; inset: 0; z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(135deg, #064e3b, #059669, #10b981); opacity: 0; pointer-events: none; transition: opacity 0.35s ease; }
+        .page-loader.show { opacity: 1; pointer-events: all; }
+        .page-loader .loader-brand { font-size: 2.8rem; font-weight: 800; color: #fff; letter-spacing: -1px; }
+        .page-loader .loader-brand .dot { display: inline-block; width: 10px; height: 10px; background: #fff; border-radius: 50%; margin: 0 3px; animation: loaderPulse 1.2s ease-in-out infinite; }
+        .page-loader .loader-bar { width: 140px; height: 3px; background: rgba(255,255,255,0.2); border-radius: 4px; margin-top: 24px; overflow: hidden; }
+        .page-loader .loader-bar span { display: block; height: 100%; width: 30%; background: #fff; border-radius: 4px; animation: loaderSlide 1.2s ease-in-out infinite; }
+        @keyframes loaderPulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.8); } }
+        @keyframes loaderSlide { 0% { transform: translateX(-100%); } 100% { transform: translateX(430%); } }
     </style>
 </head>
 <body>
+<div class="page-loader" id="pageLoader">
+    <div class="loader-brand">تسهيل<span class="dot"></span></div>
+    <div class="loader-bar"><span></span></div>
+</div>
     <div class="top-bar">
         <div class="container d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center gap-2">
@@ -384,6 +396,8 @@
         });
     </script>
     {% block scripts %}{% endblock %}
-    <script>document.querySelectorAll('form[method="POST"]').forEach(function(f){var i=document.createElement('input');i.type='hidden';i.name='csrf_token';i.value='{{ session.csrf_token }}';f.appendChild(i)})</script>
+    <script>document.querySelectorAll('form[method="POST"]').forEach(function(f){var i=document.createElement('input');i.type='hidden';i.name='csrf_token';i.value='{{ session.csrf_token }}';f.appendChild(i)})
+    var loader=document.getElementById('pageLoader');if(loader){var links=document.querySelectorAll('a:not([target="_blank"]):not([href^="#"]):not([href^="javascript"]):not([href^="mailto"]):not([href^="tel"])');links.forEach(function(a){a.addEventListener('click',function(e){var h=this.getAttribute('href');if(h&&h!=='#'&&!h.startsWith('?')){loader.classList.add('show')}})})}
+    </script>
 </body>
 </html>
