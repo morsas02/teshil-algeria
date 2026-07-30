@@ -124,12 +124,17 @@ CONTRACT_TYPES = ["دوام كامل", "دوام جزئي", "مؤقت", "عن ب
 EXPERIENCE_LEVELS = ["مبتدئ (أقل من سنة)", "Junior (1-3 سنوات)", "Mid (3-5 سنوات)", "Senior (5-10 سنوات)", "خبير (أكثر من 10 سنوات)"]
 
 class DB:
+    _pool = None
+
     def __init__(self):
         self._url = os.environ.get('DATABASE_URL', '')
         if self._url:
             import psycopg2
             from psycopg2.extras import RealDictCursor
-            self._conn = psycopg2.connect(self._url, cursor_factory=RealDictCursor)
+            from psycopg2.pool import ThreadedConnectionPool
+            if DB._pool is None:
+                DB._pool = ThreadedConnectionPool(1, 4, self._url, cursor_factory=RealDictCursor)
+            self._conn = DB._pool.getconn()
         else:
             self._conn = sqlite3.connect(DB_PATH, timeout=15)
             self._conn.row_factory = sqlite3.Row
@@ -172,7 +177,10 @@ class DB:
         self._conn.commit()
 
     def close(self):
-        self._conn.close()
+        if self._url and DB._pool:
+            DB._pool.putconn(self._conn)
+        else:
+            self._conn.close()
 
 def get_db():
     return DB()
