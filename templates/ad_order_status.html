@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}حالة طلب الإعلان{% endblock %}
+{% block content %}
+<div class="container py-4" style="max-width:640px">
+  <div class="card p-4">
+    <div class="mb-3 text-center">
+      {% if order.status == 'pending_payment' %}
+      <i class="bi bi-clock-history" style="font-size:3rem;color:var(--accent);"></i>
+      <h5 class="fw-bold mt-2">في انتظار الدفع</h5>
+      {% elif order.status == 'paid' %}
+      <i class="bi bi-hourglass-split" style="font-size:3rem;color:var(--accent);"></i>
+      <h5 class="fw-bold mt-2">تم رفع الإيصال — في انتظار المراجعة</h5>
+      {% elif order.status == 'active' %}
+      <i class="bi bi-check-circle" style="font-size:3rem;color:var(--primary);"></i>
+      <h5 class="fw-bold mt-2">إعلانك نشط</h5>
+      {% elif order.status == 'rejected' %}
+      <i class="bi bi-x-circle" style="font-size:3rem;color:#ef4444;"></i>
+      <h5 class="fw-bold mt-2">تم رفض الإعلان</h5>
+      {% elif order.status == 'cancelled' %}
+      <i class="bi bi-x-circle" style="font-size:3rem;color:#ef4444;"></i>
+      <h5 class="fw-bold mt-2">تم إلغاء الطلب</h5>
+      {% elif order.status == 'expired' %}
+      <i class="bi bi-hourglass" style="font-size:3rem;color:var(--gray-400);"></i>
+      <h5 class="fw-bold mt-2">انتهت مدة الإعلان</h5>
+      {% endif %}
+    </div>
+
+    <div class="card bg-light p-3 mb-3">
+      <div class="text-center mb-2">
+        <img src="{{ order.image_url }}" alt="{{ order.title }}" style="max-width:100%;max-height:90px;object-fit:cover;border-radius:8px;">
+      </div>
+      <div class="d-flex justify-content-between mb-1">
+        <span class="text-muted">عنوان الإعلان</span>
+        <span class="fw-bold">{{ order.title }}</span>
+      </div>
+      <div class="d-flex justify-content-between mb-1">
+        <span class="text-muted">المدة</span>
+        <span class="fw-bold">{{ order.duration_days }} يوم</span>
+      </div>
+      <div class="d-flex justify-content-between mb-1">
+        <span class="text-muted">المبلغ</span>
+        <span class="fw-bold">{{ order.price }} دج</span>
+      </div>
+      <div class="d-flex justify-content-between mb-1">
+        <span class="text-muted">الموضع</span>
+        <span class="fw-bold">{% if order.position == 'home_top' %}أعلى الرئيسية{% else %}أسفل الرئيسية{% endif %}</span>
+      </div>
+      <div class="d-flex justify-content-between mb-1">
+        <span class="text-muted">الحالة</span>
+        <span>
+          {% if order.status == 'pending_payment' %}
+          <span class="badge bg-warning text-dark">بانتظار الدفع</span>
+          {% elif order.status == 'paid' %}
+          <span class="badge bg-warning text-dark">بانتظار المراجعة</span>
+          {% elif order.status == 'active' %}
+          <span class="badge bg-success">نشط</span>
+          {% elif order.status == 'rejected' or order.status == 'cancelled' %}
+          <span class="badge bg-secondary">مرفوض</span>
+          {% else %}
+          <span class="badge bg-secondary">{{ order.status }}</span>
+          {% endif %}
+        </span>
+      </div>
+      {% if order.starts_at %}
+      <div class="d-flex justify-content-between">
+        <span class="text-muted">النهاية</span>
+        <span class="fw-bold">{{ order.ends_at | dt_fmt if order.ends_at else '' }}</span>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if order.status == 'pending_payment' %}
+    <div class="alert alert-info">
+      <strong><i class="bi bi-info-circle"></i> تعليمات الدفع:</strong>
+      <ol class="mb-0 mt-2" style="font-size:0.9rem;line-height:1.8;">
+        {% if settings.payment_ccp_rib %}
+        <li>حوّل المبلغ (<strong>{{ order.price }} دج</strong>) إلى حساب CCP: <strong dir="ltr">{{ settings.payment_ccp_rib }}</strong></li>
+        {% endif %}
+        {% if settings.payment_ccp_name %}
+        <li>الاسم: <strong>{{ settings.payment_ccp_name }}</strong></li>
+        {% endif %}
+        <li>ضع رقم الطلب <strong>#{{ order.id }}</strong> في تعليق التحويل</li>
+        {% if settings.payment_baridi %}
+        <li>أو أرسل عبر <strong>BaridiMob</strong> إلى الرقم <strong>{{ settings.payment_baridi }}</strong></li>
+        {% endif %}
+        {% if settings.payment_phone %}
+        <li>أو عبر <strong>بريدي موب</strong> إلى <strong>{{ settings.payment_phone }}</strong></li>
+        {% endif %}
+        <li>بعد التحويل ارفع صورة الإيصال أدناه</li>
+      </ol>
+    </div>
+
+    {% if order.receipt_path %}
+    <div class="alert alert-success">
+      <i class="bi bi-check-circle"></i> تم رفع الإيصال. في انتظار مراجعة الإدارة.
+    </div>
+    {% else %}
+    <form method="POST" action="{{ url_for('ad_upload_receipt', oid=order.id) }}" enctype="multipart/form-data">
+      <label class="form-label fw-bold">رفع إيصال الدفع</label>
+      <div class="mb-2">
+        <input type="file" name="receipt" class="form-control" accept="image/*,.pdf" required>
+      </div>
+      <button type="submit" class="btn btn-primary w-100">رفع الإيصال</button>
+    </form>
+    {% endif %}
+    {% endif %}
+
+    <a href="/my-ads" class="btn btn-outline-primary mt-3 w-100">كل طلباتي الإعلانية</a>
+  </div>
+</div>
+{% endblock %}

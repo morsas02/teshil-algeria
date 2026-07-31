@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% block title %}لوحة تحكم الإعلانات{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div class="container"><h4 class="fw-bold mb-0"><i class="bi bi-megaphone text-primary"></i> لوحة تحكم الإعلانات</h4></div>
+</div>
+<div class="container py-4">
+
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h6 class="fw-bold">إجمالي أرباح الإعلانات</h6>
+                    <h2 class="fw-bold mb-0">{{ revenue }} <small>دج</small></h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <h6 class="fw-bold">طلبات بانتظار الدفع</h6>
+                    <h2 class="fw-bold mb-0">{{ pending_count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h6 class="fw-bold">البانرات النشطة</h6>
+                    <h2 class="fw-bold mb-0">{{ banners | selectattr('is_active', 'equalto', 1) | list | length }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h6 class="fw-bold">إجمالي النقرات</h6>
+                    <h2 class="fw-bold mb-0">{{ banners | sum(attribute='clicks') }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-lg-4 mb-3">
+            <div class="card p-4">
+                <h6 class="fw-bold mb-3"><i class="bi bi-cash-coin"></i> سعر الإعلان</h6>
+                <form method="POST" action="/admin/ads/settings">
+                    <div class="d-flex gap-2 mb-2">
+                        <input type="number" name="ad_price_per_week" class="form-control" value="{{ ad_price }}" min="0" step="100" required>
+                        <span class="align-self-center fw-bold">دج/أسبوع</span>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">حفظ السعر</button>
+                </form>
+                <small class="text-muted mt-2 d-block">يُحسب السعر حسب المدة: أسبوع = السعر، أسبوعان = الضعف، 30 يوم ≈ 4.3 أسبوع</small>
+            </div>
+        </div>
+        <div class="col-lg-8 mb-3">
+            <div class="card p-4 h-100">
+                <h6 class="fw-bold mb-3"><i class="bi bi-badge-ad"></i> كيف يعمل الربح؟</h6>
+                <ol class="mb-0" style="font-size:0.9rem;line-height:2;">
+                    <li>المعلن يطلب إعلاناً من صفحة <strong>أعلن معنا</strong> ويحدد المدة</li>
+                    <li>يدفع عبر CCP / BaridiMob ويرفع الإيصال</li>
+                    <li>تؤكد الدفع هنا → <strong>البانر يظهر تلقائياً</strong> في الرئيسية للمدة المدفوعة</li>
+                    <li>بعد انتهاء المدة يتوقف البانر من تلقاء نفسه</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header bg-white"><h6 class="fw-bold mb-0"><i class="bi bi-inbox"></i> طلبات الإعلانات ({{ orders|length }})</h6></div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>المعلن</th>
+                            <th>الإعلان</th>
+                            <th>المدة</th>
+                            <th>المبلغ</th>
+                            <th>الإيصال</th>
+                            <th>الحالة</th>
+                            <th>إجراء</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for o in orders %}
+                        <tr>
+                            <td>#{{ o.id }}</td>
+                            <td>
+                                <strong>{{ o.full_name }}</strong>
+                                <br><small class="text-muted">{{ o.email }}</small>
+                            </td>
+                            <td>
+                                <img src="{{ o.image_url }}" alt="" style="height:30px;max-width:80px;object-fit:cover;border-radius:6px;">
+                                <small class="fw-bold d-block">{{ o.title }}</small>
+                            </td>
+                            <td>{{ o.duration_days }} يوم</td>
+                            <td class="fw-bold">{{ o.price }} دج</td>
+                            <td>
+                                {% if o.receipt_path %}
+                                <a href="/static/receipts/{{ o.receipt_path }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-paperclip"></i> عرض
+                                </a>
+                                {% else %}
+                                <span class="text-muted small">لا يوجد</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if o.status == 'pending_payment' %}
+                                <span class="badge bg-warning text-dark">بانتظار الدفع</span>
+                                {% elif o.status == 'paid' %}
+                                <span class="badge bg-warning text-dark">بانتظار المراجعة</span>
+                                {% elif o.status == 'active' %}
+                                <span class="badge bg-success">نشط</span>
+                                {% elif o.status == 'rejected' %}
+                                <span class="badge bg-danger">مرفوض</span>
+                                {% elif o.status == 'expired' %}
+                                <span class="badge bg-secondary">منتهي</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ o.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if o.status == 'pending_payment' or o.status == 'paid' %}
+                                <div class="d-flex gap-1">
+                                    <form method="POST" action="{{ url_for('admin_confirm_ad', oid=o.id) }}" style="display:inline;">
+                                        <button class="btn btn-sm btn-success" {% if not o.receipt_path %}disabled{% endif %}>
+                                            <i class="bi bi-check-lg"></i> تأكيد وتفعيل
+                                        </button>
+                                    </form>
+                                    <form method="POST" action="{{ url_for('admin_reject_ad', oid=o.id) }}" style="display:inline;">
+                                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg"></i></button>
+                                    </form>
+                                </div>
+                                {% elif o.status == 'active' and o.ends_at %}
+                                <small class="text-muted">ينتهي {{ o.ends_at | dt_fmt }}</small>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="8" class="text-center text-muted py-4">لا توجد طلبات إعلانات بعد</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-white"><h6 class="fw-bold mb-0"><i class="bi bi-image"></i> البانرات</h6></div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>المعاينة</th>
+                            <th>العنوان</th>
+                            <th>الحالة</th>
+                            <th>النهايات</th>
+                            <th>النقرات</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for b in banners %}
+                        <tr>
+                            <td style="min-width:160px;"><img src="{{ b.image_url }}" alt="" style="height:40px;max-width:140px;object-fit:cover;border-radius:6px;"></td>
+                            <td class="fw-bold">{{ b.title }}</td>
+                            <td>
+                                {% if b.is_expired %}
+                                <span class="badge bg-secondary">منتهي</span>
+                                {% elif b.is_active %}
+                                <span class="badge bg-success">نشط</span>
+                                {% else %}
+                                <span class="badge bg-secondary">متوقف</span>
+                                {% endif %}
+                            </td>
+                            <td><small>{{ b.ends_at | dt_fmt if b.ends_at else 'دائم' }}</small></td>
+                            <td>{{ b.clicks }}</td>
+                            <td>
+                                <form method="POST" action="{{ url_for('admin_toggle_banner', bid=b.id) }}" style="display:inline;">
+                                    <button class="btn btn-sm btn-outline-secondary">
+                                        {% if b.is_active %}<i class="bi bi-pause"></i>{% else %}<i class="bi bi-play"></i>{% endif %}
+                                    </button>
+                                </form>
+                                <form method="POST" action="{{ url_for('admin_delete_banner', bid=b.id) }}" style="display:inline;"
+                                      onsubmit="return confirm('حذف هذا البانر نهائياً؟');">
+                                    <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="6" class="text-center text-muted py-4">لا توجد بانرات</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

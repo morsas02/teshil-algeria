@@ -11,6 +11,12 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import sqlite3, os, re, json, uuid, traceback
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 app = Flask(__name__)
 app.config.update(
     SESSION_COOKIE_SECURE=os.environ.get('BASE_URL', '').startswith('https'),
@@ -72,6 +78,7 @@ def internal_error(e):
 ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', 'admin@ta9eef.dz')
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123456')
 JOB_PRICE = 1000
+AD_PRICE_PER_WEEK = 5000
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 AVATAR_MAX_SIZE = 2 * 1024 * 1024
 ALLOWED_RECEIPT_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'pdf'}
@@ -195,6 +202,12 @@ class DB:
 
     def commit(self):
         self._conn.commit()
+
+    def rollback(self):
+        try:
+            self._conn.rollback()
+        except Exception:
+            pass
 
     def close(self):
         if self._closed:
@@ -428,6 +441,39 @@ SCHEMA = '''
         FOREIGN KEY (user_id) REFERENCES users(id),
         FOREIGN KEY (package_id) REFERENCES packages(id)
     );
+
+    CREATE TABLE IF NOT EXISTS banners (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        image_url TEXT NOT NULL,
+        link_url TEXT DEFAULT '',
+        position TEXT DEFAULT 'home_top' CHECK(position IN ('home_top','home_bottom')),
+        is_active INTEGER DEFAULT 1,
+        sort_order INTEGER DEFAULT 0,
+        clicks INTEGER DEFAULT 0,
+        ends_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS ad_orders (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        image_url TEXT NOT NULL,
+        link_url TEXT DEFAULT '',
+        position TEXT DEFAULT 'home_top' CHECK(position IN ('home_top','home_bottom')),
+        duration_days INTEGER NOT NULL DEFAULT 7,
+        price REAL NOT NULL DEFAULT 0,
+        status TEXT DEFAULT 'pending_payment' CHECK(status IN ('pending_payment','paid','active','expired','cancelled','rejected')),
+        receipt_path TEXT,
+        starts_at TIMESTAMP,
+        ends_at TIMESTAMP,
+        banner_id INTEGER,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id)
+    );
 '''
 
 def init_db():
@@ -438,13 +484,22 @@ def init_db():
             s = stmt.strip()
             if s:
                 conn.execute(_ddl(s, True) + ';')
+        conn.commit()
     else:
         conn.executescript(_ddl(SCHEMA, False))
 
     try:
         conn.execute('ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 1')
+        conn.commit()
     except Exception:
-        pass
+        conn.rollback()
+
+    if is_pg:
+        try:
+            conn.execute("ALTER TABLE packages ADD UNIQUE (name)")
+            conn.commit()
+        except Exception:
+            conn.rollback()
 
     if not conn.execute('SELECT id FROM users WHERE email = %s', (ADMIN_EMAIL,)).fetchone():
         hashed = generate_password_hash(ADMIN_PASSWORD)
@@ -461,6 +516,13 @@ def init_db():
             ('job_price', str(JOB_PRICE))
         )
 
+    if not conn.execute('SELECT key FROM settings WHERE key = %s', ('ad_price_per_week',)).fetchone():
+        conn.execute(
+            "INSERT INTO settings (key, value) VALUES (%s, %s) ON CONFLICT(key) DO NOTHING" if is_pg else
+            'INSERT OR IGNORE INTO settings (key, value) VALUES (%s, %s)',
+            ('ad_price_per_week', str(AD_PRICE_PER_WEEK))
+        )
+
     payment_defaults = {'payment_phone': '+213670729307', 'payment_ccp_name': 'mosrsizitouni', 'payment_ccp_rib': '0028284754cle89', 'payment_baridi': ''}
     for k, v in payment_defaults.items():
         if is_pg:
@@ -470,12 +532,6 @@ def init_db():
             )
         else:
             conn.execute('INSERT OR REPLACE INTO settings (key, value) VALUES (%s, %s)', (k, v))
-
-    if is_pg:
-        try:
-            conn.execute("ALTER TABLE packages ADD UNIQUE (name)")
-        except Exception:
-            pass
 
     default_packages = [
         ('باقة التجربة', 3, 2000, 30),
@@ -601,6 +657,15 @@ def handle_lang():
         if new_url and new_url != referrer:
             return redirect(new_url)
 
+def dt_fmt(value, fmt='%Y-%m-%d %H:%M'):
+    if not value:
+        return ''
+    if isinstance(value, datetime):
+        return value.strftime(fmt)
+    return str(value)[:16]
+
+app.add_template_filter(dt_fmt, 'dt_fmt')
+
 @app.context_processor
 def inject_globals():
     ctx = {
@@ -610,6 +675,7 @@ def inject_globals():
         'now': datetime.now(),
         'stats': get_stats(),
     }
+
     if 'user_id' in session:
         conn = get_db()
         ctx['unread_count'] = get_unread_count(session['user_id'])
@@ -656,8 +722,14 @@ def index():
         ORDER BY job_count DESC LIMIT 8
     ''').fetchall()
 
+    banners = conn.execute('''
+        SELECT * FROM banners WHERE is_active = 1
+        AND (ends_at IS NULL OR ends_at > CURRENT_TIMESTAMP)
+        ORDER BY sort_order ASC, id DESC
+    ''').fetchall()
+
     conn.close()
-    return render_template('index.html', featured=featured, recent=recent, urgent=urgent, top_employers=top_employers)
+    return render_template('index.html', featured=featured, recent=recent, urgent=urgent, top_employers=top_employers, banners=banners)
 
 @app.route('/register', methods=['GET', 'POST'])
 @limiter.limit("3 per minute")
@@ -2189,6 +2261,348 @@ def admin_toggle_package(pid):
     conn.commit()
     conn.close()
     return redirect(url_for('admin_settings'))
+
+@app.route('/admin/banners')
+@admin_required
+def admin_banners():
+    conn = get_db()
+    banners = conn.execute('SELECT * FROM banners ORDER BY sort_order ASC, id DESC').fetchall()
+    conn.close()
+    return render_template('admin/banners.html', banners=banners)
+
+@app.route('/admin/banners/add', methods=['POST'])
+@admin_required
+def admin_add_banner():
+    title = request.form.get('title', '').strip()
+    link_url = request.form.get('link_url', '').strip()
+    position = request.form.get('position', 'home_top')
+    if position not in ('home_top', 'home_bottom'):
+        position = 'home_top'
+    try:
+        sort_order = int(request.form.get('sort_order', 0))
+    except ValueError:
+        sort_order = 0
+
+    if not title:
+        flash('يرجى إدخال عنوان البانر', 'danger')
+        return redirect(url_for('admin_banners'))
+
+    image_url = ''
+    if 'image' in request.files and request.files['image'].filename:
+        file = request.files['image']
+        ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+        if ext not in ALLOWED_EXTENSIONS:
+            flash('الصيغة غير مدعومة. يرجى اختيار PNG, JPG, GIF أو WebP', 'danger')
+            return redirect(url_for('admin_banners'))
+        if not validate_image(file):
+            flash('الملف ليس صورة صالحة', 'danger')
+            return redirect(url_for('admin_banners'))
+        file.seek(0, os.SEEK_END)
+        if file.tell() > AVATAR_MAX_SIZE:
+            flash('حجم الصورة كبير جداً. الحد الأقصى 2 ميغابايت', 'danger')
+            return redirect(url_for('admin_banners'))
+        file.seek(0)
+        upload_dir = os.path.join(app.root_path, 'static', 'uploads', 'banners')
+        os.makedirs(upload_dir, exist_ok=True)
+        filename = f'banner_{int(time.time())}_{uuid.uuid4().hex[:6]}.{ext}'
+        file.save(os.path.join(upload_dir, filename))
+        image_url = url_for('static', filename=f'uploads/banners/{filename}')
+    else:
+        image_url = request.form.get('image_url', '').strip()
+
+    if not image_url:
+        flash('يرجى رفع صورة البانر أو إدخال رابط صورة', 'danger')
+        return redirect(url_for('admin_banners'))
+
+    conn = get_db()
+    conn.execute('''
+        INSERT INTO banners (title, image_url, link_url, position, is_active, sort_order)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    ''', (title, image_url, link_url, position, 1, sort_order))
+    conn.commit()
+    conn.close()
+    flash('تم إضافة البانر بنجاح', 'success')
+    return redirect(url_for('admin_banners'))
+
+@app.route('/admin/banners/<int:bid>/toggle', methods=['POST'])
+@admin_required
+def admin_toggle_banner(bid):
+    conn = get_db()
+    b = conn.execute('SELECT is_active FROM banners WHERE id = %s', (bid,)).fetchone()
+    if b:
+        conn.execute('UPDATE banners SET is_active = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s', (0 if b['is_active'] else 1, bid))
+        conn.commit()
+    conn.close()
+    return redirect(url_for('admin_banners'))
+
+@app.route('/admin/banners/<int:bid>/delete', methods=['POST'])
+@admin_required
+def admin_delete_banner(bid):
+    conn = get_db()
+    b = conn.execute('SELECT image_url FROM banners WHERE id = %s', (bid,)).fetchone()
+    if b:
+        conn.execute('DELETE FROM banners WHERE id = %s', (bid,))
+        conn.commit()
+        conn.close()
+        if b['image_url'] and b['image_url'].startswith('/static/uploads/banners/'):
+            path = os.path.join(app.root_path, b['image_url'].lstrip('/'))
+            if os.path.exists(path):
+                try:
+                    os.remove(path)
+                except OSError:
+                    pass
+        flash('تم حذف البانر', 'info')
+        return redirect(url_for('admin_banners'))
+    conn.close()
+    flash('البانر غير موجود', 'warning')
+    return redirect(url_for('admin_banners'))
+
+@app.route('/banner/<int:bid>/click')
+def banner_click(bid):
+    conn = get_db()
+    b = conn.execute('SELECT link_url FROM banners WHERE id = %s AND is_active = 1 AND (ends_at IS NULL OR ends_at > CURRENT_TIMESTAMP)', (bid,)).fetchone()
+    if b:
+        conn.execute('UPDATE banners SET clicks = clicks + 1 WHERE id = %s', (bid,))
+        conn.commit()
+        conn.close()
+        target = b['link_url'] or url_for('index')
+        return redirect(target)
+    conn.close()
+    return redirect(url_for('index'))
+
+def get_ad_price():
+    conn = get_db()
+    row = conn.execute('SELECT value FROM settings WHERE key = %s', ('ad_price_per_week',)).fetchone()
+    conn.close()
+    try:
+        return int(row['value']) if row else AD_PRICE_PER_WEEK
+    except (TypeError, ValueError):
+        return AD_PRICE_PER_WEEK
+
+@app.route('/advertise')
+def advertise():
+    price_per_week = get_ad_price()
+    durations = [7, 14, 30]
+    plans = [{'days': d, 'price': round(d / 7 * price_per_week)} for d in durations]
+    return render_template('advertise.html', price_per_week=price_per_week, plans=plans)
+
+@app.route('/advertise/order', methods=['POST'])
+@login_required
+def ad_create_order():
+    title = request.form.get('title', '').strip()
+    link_url = request.form.get('link_url', '').strip()
+    position = request.form.get('position', 'home_top')
+    if position not in ('home_top', 'home_bottom'):
+        position = 'home_top'
+    try:
+        duration_days = int(request.form.get('duration_days', 7))
+    except ValueError:
+        duration_days = 7
+    if duration_days not in (7, 14, 30):
+        duration_days = 7
+
+    if not title:
+        flash('يرجى إدخال عنوان الإعلان', 'danger')
+        return redirect(url_for('advertise'))
+
+    image_url = ''
+    if 'image' in request.files and request.files['image'].filename:
+        file = request.files['image']
+        ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+        if ext not in ALLOWED_EXTENSIONS:
+            flash('الصيغة غير مدعومة. يرجى اختيار PNG, JPG, GIF أو WebP', 'danger')
+            return redirect(url_for('advertise'))
+        if not validate_image(file):
+            flash('الملف ليس صورة صالحة', 'danger')
+            return redirect(url_for('advertise'))
+        file.seek(0, os.SEEK_END)
+        if file.tell() > AVATAR_MAX_SIZE:
+            flash('حجم الصورة كبير جداً. الحد الأقصى 2 ميغابايت', 'danger')
+            return redirect(url_for('advertise'))
+        file.seek(0)
+        upload_dir = os.path.join(app.root_path, 'static', 'uploads', 'ads')
+        os.makedirs(upload_dir, exist_ok=True)
+        filename = f'ad_{int(time.time())}_{uuid.uuid4().hex[:6]}.{ext}'
+        file.save(os.path.join(upload_dir, filename))
+        image_url = url_for('static', filename=f'uploads/ads/{filename}')
+    else:
+        image_url = request.form.get('image_url', '').strip()
+
+    if not image_url:
+        flash('يرجى رفع صورة الإعلان أو إدخال رابط صورة', 'danger')
+        return redirect(url_for('advertise'))
+
+    price = round(duration_days / 7 * get_ad_price())
+    conn = get_db()
+    if os.environ.get('DATABASE_URL'):
+        cur = conn.execute('''
+            INSERT INTO ad_orders (user_id, title, image_url, link_url, position, duration_days, price)
+            VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id
+        ''', (session['user_id'], title, image_url, link_url, position, duration_days, price))
+        oid = cur.fetchone()['id']
+    else:
+        cur = conn.execute('''
+            INSERT INTO ad_orders (user_id, title, image_url, link_url, position, duration_days, price)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (session['user_id'], title, image_url, link_url, position, duration_days, price))
+        oid = cur.lastrowid
+    conn.commit()
+    conn.close()
+    flash('تم إنشاء طلب الإعلان. أكمل الدفع لإطلاقه.', 'success')
+    return redirect(url_for('ad_order_status', oid=oid))
+
+@app.route('/advertise/order/<int:oid>')
+@login_required
+def ad_order_status(oid):
+    conn = get_db()
+    order = conn.execute('SELECT * FROM ad_orders WHERE id = %s AND user_id = %s', (oid, session['user_id'])).fetchone()
+    settings = {row['key']: row['value'] for row in conn.execute("SELECT * FROM settings WHERE key IN ('payment_ccp_rib','payment_ccp_name','payment_phone','payment_baridi')").fetchall()}
+    conn.close()
+    if not order:
+        flash('طلب الإعلان غير موجود', 'danger')
+        return redirect(url_for('advertise'))
+    return render_template('ad_order_status.html', order=order, settings=settings)
+
+@app.route('/advertise/order/<int:oid>/receipt', methods=['POST'])
+@login_required
+def ad_upload_receipt(oid):
+    conn = get_db()
+    order = conn.execute('SELECT * FROM ad_orders WHERE id = %s AND user_id = %s', (oid, session['user_id'])).fetchone()
+    if not order:
+        conn.close()
+        flash('طلب الإعلان غير موجود', 'danger')
+        return redirect(url_for('advertise'))
+    if order['status'] != 'pending_payment':
+        conn.close()
+        flash('لا يمكن رفع إيصال لهذا الطلب الآن', 'warning')
+        return redirect(url_for('ad_order_status', oid=oid))
+    if 'receipt' not in request.files:
+        conn.close()
+        flash('الرجاء اختيار ملف الإيصال', 'danger')
+        return redirect(url_for('ad_order_status', oid=oid))
+    file = request.files['receipt']
+    if file.filename == '':
+        conn.close()
+        flash('الرجاء اختيار ملف الإيصال', 'danger')
+        return redirect(url_for('ad_order_status', oid=oid))
+    ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+    if ext not in ALLOWED_RECEIPT_EXTENSIONS:
+        conn.close()
+        flash('صيغة الملف غير مدعومة. يرجى اختيار PNG, JPG, PDF أو WebP', 'danger')
+        return redirect(url_for('ad_order_status', oid=oid))
+    if ext != 'pdf' and not validate_image(file):
+        conn.close()
+        flash('الملف ليس صورة صالحة', 'danger')
+        return redirect(url_for('ad_order_status', oid=oid))
+    file.seek(0, os.SEEK_END)
+    if file.tell() > RECEIPT_MAX_SIZE:
+        conn.close()
+        flash('حجم الملف كبير جداً. الحد الأقصى 5 ميغابايت', 'danger')
+        return redirect(url_for('ad_order_status', oid=oid))
+    file.seek(0)
+    filename = f'ad_receipt_{oid}_{uuid.uuid4().hex[:8]}.{ext}'
+    os.makedirs('static/receipts', exist_ok=True)
+    file.save(f'static/receipts/{filename}')
+    conn.execute("UPDATE ad_orders SET receipt_path = %s, status = 'paid', updated_at = CURRENT_TIMESTAMP WHERE id = %s", (filename, oid))
+    conn.commit()
+    conn.close()
+    flash('تم رفع الإيصال بنجاح. سنقوم بمراجعته قريباً.', 'success')
+    return redirect(url_for('ad_order_status', oid=oid))
+
+@app.route('/my-ads')
+@login_required
+def my_ads():
+    conn = get_db()
+    orders = conn.execute('SELECT * FROM ad_orders WHERE user_id = %s ORDER BY id DESC', (session['user_id'],)).fetchall()
+    conn.close()
+    return render_template('my_ads.html', orders=orders)
+
+@app.route('/admin/ads')
+@admin_required
+def admin_ads():
+    conn = get_db()
+    orders = conn.execute('''
+        SELECT o.*, u.full_name, u.email
+        FROM ad_orders o JOIN users u ON o.user_id = u.id
+        ORDER BY o.id DESC LIMIT 100
+    ''').fetchall()
+    banners = conn.execute('''
+        SELECT b.*, (b.ends_at IS NOT NULL AND b.ends_at <= CURRENT_TIMESTAMP) as is_expired
+        FROM banners b ORDER BY b.id DESC LIMIT 50
+    ''').fetchall()
+    revenue = conn.execute("SELECT COALESCE(SUM(price), 0) AS total FROM ad_orders WHERE status IN ('paid','active')").fetchone()
+    pending = conn.execute("SELECT COUNT(*) AS c FROM ad_orders WHERE status = 'pending_payment'").fetchone()
+    price_row = conn.execute("SELECT value FROM settings WHERE key = 'ad_price_per_week'").fetchone()
+    conn.close()
+    return render_template('admin/ads.html', orders=orders, banners=banners,
+                           revenue=revenue['total'] if revenue else 0,
+                           pending_count=pending['c'] if pending else 0,
+                           ad_price=price_row['value'] if price_row else AD_PRICE_PER_WEEK)
+
+@app.route('/admin/ads/<int:oid>/confirm', methods=['POST'])
+@admin_required
+def admin_confirm_ad(oid):
+    conn = get_db()
+    order = conn.execute('SELECT * FROM ad_orders WHERE id = %s', (oid,)).fetchone()
+    if not order:
+        conn.close()
+        flash('طلب الإعلان غير موجود', 'danger')
+        return redirect(url_for('admin_ads'))
+    if order['status'] not in ('pending_payment', 'paid'):
+        conn.close()
+        flash('لا يمكن تأكيد هذا الطلب', 'warning')
+        return redirect(url_for('admin_ads'))
+
+    now = datetime.now()
+    ends_at = now + timedelta(days=order['duration_days'])
+    conn.execute('''
+        INSERT INTO banners (title, image_url, link_url, position, is_active, sort_order, ends_at)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+    ''', (order['title'], order['image_url'], order['link_url'], order['position'], 1, 0, ends_at.strftime('%Y-%m-%d %H:%M:%S')))
+    conn.execute('''
+        UPDATE ad_orders SET status = 'active', starts_at = CURRENT_TIMESTAMP, ends_at = %s,
+            updated_at = CURRENT_TIMESTAMP, banner_id = (SELECT MAX(id) FROM banners)
+        WHERE id = %s
+    ''', (ends_at.strftime('%Y-%m-%d %H:%M:%S'), oid))
+    conn.commit()
+    notify(order['user_id'], 'تم تفعيل إعلانك', f'تم تأكيد دفع إعلان "{order["title"]}" وتفعيله لمدة {order["duration_days"]} يوماً.', 'success', '/my-ads', conn=conn)
+    conn.commit()
+    conn.close()
+    flash(f'تم تأكيد الدفع وتفعيل الإعلان "{order["title"]}"', 'success')
+    return redirect(url_for('admin_ads'))
+
+@app.route('/admin/ads/<int:oid>/reject', methods=['POST'])
+@admin_required
+def admin_reject_ad(oid):
+    conn = get_db()
+    order = conn.execute('SELECT * FROM ad_orders WHERE id = %s', (oid,)).fetchone()
+    if order and order['status'] in ('pending_payment', 'paid'):
+        conn.execute("UPDATE ad_orders SET status = 'rejected', updated_at = CURRENT_TIMESTAMP WHERE id = %s", (oid,))
+        conn.commit()
+        notify(order['user_id'], 'تم رفض الإعلان', f'نأسف، تم رفض إعلان "{order["title"]}". راجع بياناتك.', 'danger', '/my-ads', conn=conn)
+        conn.commit()
+    conn.close()
+    flash('تم رفض الطلب', 'info')
+    return redirect(url_for('admin_ads'))
+
+@app.route('/admin/ads/settings', methods=['POST'])
+@admin_required
+def admin_ads_settings():
+    try:
+        price = int(request.form.get('ad_price_per_week', 0))
+    except ValueError:
+        price = 0
+    if price < 0:
+        price = 0
+    conn = get_db()
+    conn.execute(
+        "INSERT INTO settings (key, value) VALUES (%s, %s) ON CONFLICT(key) DO UPDATE SET value=EXCLUDED.value" if os.environ.get('DATABASE_URL') else 'INSERT OR REPLACE INTO settings (key, value) VALUES (%s, %s)',
+        ('ad_price_per_week', str(price))
+    )
+    conn.commit()
+    conn.close()
+    flash('تم تحديث سعر الإعلان', 'success')
+    return redirect(url_for('admin_ads'))
 
 @app.route('/robots.txt')
 def robots_txt():

@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}أعلن معنا{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div class="container"><h4 class="fw-bold mb-0"><i class="bi bi-megaphone text-primary"></i> أعلن معنا</h4></div>
+</div>
+
+<section class="container py-4">
+    <div class="row g-4">
+        <div class="col-lg-5">
+            <div class="card p-4 h-100">
+                <h5 class="fw-bold mb-3">لماذا تعلن في تسهيل؟</h5>
+                <ul class="list-unstyled">
+                    <li class="mb-3 d-flex gap-2">
+                        <i class="bi bi-people text-primary"></i>
+                        <div><strong>جمهور مستهدف</strong><br><small class="text-muted">باحثون عن عمل وأرباب مؤسسات من كل الولايات</small></div>
+                    </li>
+                    <li class="mb-3 d-flex gap-2">
+                        <i class="bi bi-eye text-primary"></i>
+                        <div><strong>ظهور واسع</strong><br><small class="text-muted">بانرك يظهر في الصفحة الرئيسية أمام آلاف الزوار</small></div>
+                    </li>
+                    <li class="mb-3 d-flex gap-2">
+                        <i class="bi bi-bar-chart text-primary"></i>
+                        <div><strong>إحصائيات شفافة</strong><br><small class="text-muted">تتبع عدد النقرات على إعلانك</small></div>
+                    </li>
+                    <li class="mb-3 d-flex gap-2">
+                        <i class="bi bi-credit-card text-primary"></i>
+                        <div><strong>دفع بسيط</strong><br><small class="text-muted">تحويل عبر CCP أو BaridiMob ورفع الإيصال</small></div>
+                    </li>
+                </ul>
+                <hr>
+                <div class="text-center">
+                    <div class="text-muted small">سعر الأسبوع</div>
+                    <div style="font-size:2.2rem;font-weight:800;color:var(--primary);">{{ price_per_week }} <small>دج</small></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-7">
+            <div class="card p-4">
+                <h5 class="fw-bold mb-3"><i class="bi bi-pencil-square"></i> طلب إعلان جديد</h5>
+                {% if not session.user_id %}
+                <div class="alert alert-warning">
+                    <i class="bi bi-info-circle"></i> يجب عليك <a href="/login?next=/advertise" class="fw-bold">تسجيل الدخول</a> أولاً لطلب إعلان.
+                </div>
+                {% endif %}
+                <form method="POST" action="/advertise/order" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label class="form-label">عنوان الإعلان *</label>
+                        <input type="text" name="title" class="form-control" required placeholder="مثال: شركة ... - تخفيضات على ...">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">صورة الإعلان (رفع ملف)</label>
+                        <input type="file" name="image" class="form-control" accept="image/*">
+                        <small class="text-muted">PNG, JPG, GIF أو WebP بحد أقصى 2MB. المقياس الموصى به: 728×90.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">أو رابط صورة مباشر</label>
+                        <input type="text" name="image_url" class="form-control" placeholder="https://example.com/ad.png" dir="ltr">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">الرابط عند النقر (اختياري)</label>
+                        <input type="text" name="link_url" class="form-control" placeholder="https://example.com" dir="ltr">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">الموضع</label>
+                            <select name="position" class="form-select">
+                                <option value="home_top">أعلى الرئيسية</option>
+                                <option value="home_bottom">أسفل الرئيسية</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">المدة</label>
+                            <select name="duration_days" class="form-select" id="durationSelect">
+                                {% for p in plans %}
+                                <option value="{{ p.days }}" data-price="{{ p.price }}">
+                                    {{ p.days }} يوم — {{ p.price }} دج
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="alert alert-success d-flex justify-content-between align-items-center">
+                        <span>الإجمالي المطلوب:</span>
+                        <strong id="totalPrice" style="font-size:1.3rem;color:var(--primary);">-- دج</strong>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 btn-lg" {% if not session.user_id %}disabled{% endif %}>
+                        <i class="bi bi-cart-check"></i> طلب الإعلان والدفع
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const sel = document.getElementById('durationSelect');
+    const total = document.getElementById('totalPrice');
+    function update() {
+        const opt = sel.options[sel.selectedIndex];
+        total.textContent = (opt ? opt.dataset.price : '--') + ' دج';
+    }
+    sel.addEventListener('change', update);
+    update();
+});
+</script>
+{% endblock %}
+{% endblock %}

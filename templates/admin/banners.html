@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}إدارة البانرات الإعلانية{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div class="container d-flex justify-content-between align-items-center">
+        <h4 class="fw-bold mb-0"><i class="bi bi-megaphone text-primary"></i> إدارة البانرات الإعلانية</h4>
+        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addBannerModal">
+            <i class="bi bi-plus-lg"></i> إضافة بانر
+        </button>
+    </div>
+</div>
+<div class="container py-4">
+    {% if banners %}
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>المعاينة</th>
+                    <th>العنوان</th>
+                    <th>الموضع</th>
+                    <th>النقرات</th>
+                    <th>الحالة</th>
+                    <th>الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in banners %}
+                <tr>
+                    <td style="min-width:180px;">
+                        <a href="{{ b.image_url }}" target="_blank">
+                            <img src="{{ b.image_url }}" alt="{{ b.title }}" style="height:50px;max-width:160px;object-fit:cover;border-radius:6px;">
+                        </a>
+                    </td>
+                    <td class="fw-bold">{{ b.title }}</td>
+                    <td><small>
+                        {% if b.position == 'home_top' %}أعلى الرئيسية{% else %}أسفل الرئيسية{% endif %}
+                    </small></td>
+                    <td>{{ b.clicks }}</td>
+                    <td>
+                        {% if b.is_active %}
+                        <span class="badge bg-success">نشط</span>
+                        {% else %}
+                        <span class="badge bg-secondary">متوقف</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <form method="POST" action="{{ url_for('admin_toggle_banner', bid=b.id) }}" style="display:inline;">
+                            <button class="btn btn-sm btn-outline-secondary">
+                                {% if b.is_active %}<i class="bi bi-pause"></i>{% else %}<i class="bi bi-play"></i>{% endif %}
+                            </button>
+                        </form>
+                        <form method="POST" action="{{ url_for('admin_delete_banner', bid=b.id) }}" style="display:inline;"
+                              onsubmit="return confirm('حذف هذا البانر نهائياً؟');">
+                            <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="card text-center py-5">
+        <i class="bi bi-megaphone" style="font-size:3rem;color:#ccc;"></i>
+        <h5 class="text-muted mt-3">لا توجد بانرات بعد</h5>
+        <p>أضف أول بانر إعلاني يظهر في الصفحة الرئيسية</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="modal fade" id="addBannerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">إضافة بانر إعلاني</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('admin_add_banner') }}" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">عنوان البانر</label>
+                        <input type="text" name="title" class="form-control" required placeholder="مثال: إعلان شركة ...">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">صورة البانر (رفع ملف)</label>
+                        <input type="file" name="image" class="form-control" accept="image/*">
+                        <small class="text-muted">PNG, JPG, GIF أو WebP بحد أقصى 2MB. المقياس الموصى به: 728×90 للعرض الأفقي.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">أو رابط صورة مباشر</label>
+                        <input type="text" name="image_url" class="form-control" placeholder="https://example.com/ad.png">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">الرابط عند النقر (اختياري)</label>
+                        <input type="text" name="link_url" class="form-control" placeholder="https://example.com" dir="ltr">
+                    </div>
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label">الموضع</label>
+                            <select name="position" class="form-select">
+                                <option value="home_top">أعلى الرئيسية</option>
+                                <option value="home_bottom">أسفل الرئيسية</option>
+                            </select>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">الترتيب</label>
+                            <input type="number" name="sort_order" class="form-control" value="0" min="0">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary w-100">إضافة البانر</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

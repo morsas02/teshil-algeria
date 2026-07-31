@@ -241,6 +241,7 @@
                     <li class="nav-item"><a class="nav-link" href="/"><i class="bi bi-house"></i> الرئيسية</a></li>
                     <li class="nav-item"><a class="nav-link" href="/jobs"><i class="bi bi-search"></i> الوظائف</a></li>
                     <li class="nav-item"><a class="nav-link" href="/workers"><i class="bi bi-people"></i> العمال</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/advertise"><i class="bi bi-megaphone"></i> أعلن معنا</a></li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">المزيد</a>
                         <ul class="dropdown-menu">
@@ -255,6 +256,7 @@
                         {% if session.user_type == 'admin' %}
                             <li class="nav-item"><a class="nav-link" href="/admin"><i class="bi bi-speedometer2"></i> لوحة التحكم</a></li>
                             <li class="nav-item"><a class="nav-link" href="/admin/requests"><i class="bi bi-inbox"></i> الطلبات</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/admin/ads"><i class="bi bi-badge-ad"></i> الإعلانات</a></li>
                         {% elif session.user_type == 'employer' %}
                             <li class="nav-item"><a class="nav-link" href="/jobs/create"><i class="bi bi-plus-circle text-primary"></i> نشر وظيفة</a></li>
                             <li class="nav-item"><a class="nav-link" href="/my-jobs"><i class="bi bi-list-task"></i> وظائفي</a></li>
@@ -283,6 +285,7 @@
                                 <li><a class="dropdown-item" href="/employer/wallet"><i class="bi bi-wallet2"></i> المحفظة <span class="badge bg-success ms-auto" style="direction:ltr;">{{ wallet_balance }} دج</span></a></li>
                                 {% endif %}
                                 <li><a class="dropdown-item" href="/profile"><i class="bi bi-person"></i> الملف الشخصي</a></li>
+                                <li><a class="dropdown-item" href="/my-ads"><i class="bi bi-megaphone"></i> إعلاناتي</a></li>
                                 <li><a class="dropdown-item d-flex align-items-center" href="/notifications">
                                     <i class="bi bi-bell"></i> الإشعارات
                                     {% if unread_count and unread_count > 0 %}

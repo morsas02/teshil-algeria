@@ -43,7 +43,7 @@
                             {% elif r.status == 'confirmed' %}<span class="badge bg-success">مؤكد</span>
                             {% else %}<span class="badge bg-secondary">ملغي</span>{% endif %}
                         </td>
-                        <td style="font-size:0.8rem;">{{ r.created_at[:16] }}</td>
+                        <td style="font-size:0.8rem;">{{ r.created_at | dt_fmt }}</td>
                         <td>
                             {% if r.status == 'pending' %}
                             <form method="POST" action="{{ url_for('admin_handle_payment', rid=r.id, action='confirm') }}" style="display:inline;">
@@ -90,7 +90,7 @@
                             {% elif t.status == 'pending' %}<span class="badge bg-warning text-dark">قيد الانتظار</span>
                             {% else %}<span class="badge bg-secondary">ملغاة</span>{% endif %}
                         </td>
-                        <td style="font-size:0.8rem;">{{ t.created_at[:16] }}</td>
+                        <td style="font-size:0.8rem;">{{ t.created_at | dt_fmt }}</td>
                         <td>
                             {% if t.status == 'pending' %}
                             <form method="POST" action="{{ url_for('admin_handle_transaction', tid=t.id, action='confirm') }}" style="display:inline;">

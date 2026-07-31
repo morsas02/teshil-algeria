@@ -59,6 +59,17 @@
     </div>
 </div>
 
+{% set top_banners = banners | selectattr('position', 'equalto', 'home_top') | list if banners else [] %}
+{% if top_banners %}
+<section class="container py-3">
+    {% for b in top_banners %}
+    <a href="{{ url_for('banner_click', bid=b.id) }}" target="_blank" rel="noopener" class="d-block">
+        <img src="{{ b.image_url }}" alt="{{ b.title }}" class="w-100" style="border-radius:var(--radius);max-height:110px;object-fit:cover;">
+    </a>
+    {% endfor %}
+</section>
+{% endif %}
+
 {% if urgent %}
 <section class="container py-4">
     <div class="d-flex justify-content-between align-items-center">
@@ -184,6 +195,17 @@
         </div>
         {% endfor %}
     </div>
+</section>
+{% endif %}
+
+{% set bottom_banners = banners | selectattr('position', 'equalto', 'home_bottom') | list if banners else [] %}
+{% if bottom_banners %}
+<section class="container py-3">
+    {% for b in bottom_banners %}
+    <a href="{{ url_for('banner_click', bid=b.id) }}" target="_blank" rel="noopener" class="d-block">
+        <img src="{{ b.image_url }}" alt="{{ b.title }}" class="w-100" style="border-radius:var(--radius);max-height:110px;object-fit:cover;">
+    </a>
+    {% endfor %}
 </section>
 {% endif %}
 

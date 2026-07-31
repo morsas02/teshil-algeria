@@ -39,7 +39,7 @@
       </div>
       <div class="d-flex justify-content-between">
         <span class="text-muted">التاريخ</span>
-        <span class="fw-bold">{{ req.created_at[:16] }}</span>
+        <span class="fw-bold">{{ req.created_at | dt_fmt }}</span>
       </div>
       {% if req.package_name %}
       <div class="d-flex justify-content-between">
