@@ -2,7 +2,7 @@ import smtplib, ssl
 import time
 import secrets
 from email.message import EmailMessage
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, send_from_directory, abort
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, send_from_directory, send_file, abort
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.middleware.proxy_fix import ProxyFix
 from functools import wraps
@@ -1807,8 +1807,10 @@ def admin_dashboard():
         WHERE status = 'approved' GROUP BY category ORDER BY count DESC LIMIT 10
     ''').fetchall()
 
-    monthly_jobs = conn.execute('''
-        SELECT strftime('%Y-%m', created_at) as month, COUNT(*) as count
+    is_pg = bool(os.environ.get('DATABASE_URL', ''))
+    month_expr = "TO_CHAR(created_at, 'YYYY-MM')" if is_pg else "strftime('%Y-%m', created_at)"
+    monthly_jobs = conn.execute(f'''
+        SELECT {month_expr} as month, COUNT(*) as count
         FROM jobs GROUP BY month ORDER BY month DESC LIMIT 12
     ''').fetchall()
 
@@ -1992,6 +1994,23 @@ def admin_request_status(req_id, action):
     conn.close()
     flash('تم تحديث الحالة', 'success')
     return redirect(url_for('admin_requests'))
+
+@app.route('/admin/backup')
+@admin_required
+def admin_backup():
+    if os.environ.get('DATABASE_URL'):
+        flash('النسخ الاحتياطي متاح فقط عند العمل بـ SQLite', 'warning')
+        return redirect(url_for('admin_dashboard'))
+    import tempfile
+    src = sqlite3.connect(DB_PATH)
+    fd, tmp = tempfile.mkstemp(suffix='.db')
+    os.close(fd)
+    dst = sqlite3.connect(tmp)
+    src.backup(dst)
+    dst.close()
+    src.close()
+    fname = f"ta9eef-backup-{datetime.now().strftime('%Y%m%d-%H%M%S')}.db"
+    return send_file(tmp, as_attachment=True, download_name=fname, mimetype='application/octet-stream')
 
 @app.route('/admin/messages')
 @admin_required
