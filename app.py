@@ -11,11 +11,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import sqlite3, os, re, json, uuid, traceback
 
-import sys
-print('APP BOOT: importing app module', flush=True)
-
 app = Flask(__name__)
-print('APP BOOT: Flask created', flush=True)
 app.config.update(
     SESSION_COOKIE_SECURE=os.environ.get('BASE_URL', '').startswith('https'),
     SESSION_COOKIE_HTTPONLY=True,
@@ -417,9 +413,7 @@ SCHEMA = '''
 '''
 
 def init_db():
-    print('APP BOOT: init_db start', flush=True)
     conn = get_db()
-    print('APP BOOT: got DB connection', flush=True)
     is_pg = bool(os.environ.get('DATABASE_URL', ''))
     if is_pg:
         for stmt in SCHEMA.split(';'):
@@ -482,10 +476,8 @@ def init_db():
 
     conn.commit()
     conn.close()
-    print('APP BOOT: init_db done', flush=True)
 
 init_db()
-print('APP BOOT: module import complete', flush=True)
 
 def login_required(f):
     @wraps(f)
