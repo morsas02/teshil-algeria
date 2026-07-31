@@ -1,0 +1,10 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+.git/
+.env
+ta9eef.db
+ta9eef.db-shm
+ta9eef.db-wal
+.DS_Store

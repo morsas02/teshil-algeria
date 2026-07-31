@@ -175,7 +175,7 @@ class DB:
         try:
             if self._url:
                 cur = self._conn.cursor()
-                cur.execute(sql, params or ())
+                cur.execute(sql, params if params else None)
                 return cur
             return self._conn.execute(sql, params or ())
         except Exception as e:
@@ -493,12 +493,12 @@ def init_db():
         if not has_col:
             conn.execute('ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 1')
             conn.commit()
-
-    try:
-        conn.execute('ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 1')
-        conn.commit()
-    except Exception:
-        conn.rollback()
+    else:
+        try:
+            conn.execute('ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 1')
+            conn.commit()
+        except Exception:
+            conn.rollback()
 
     if is_pg:
         has_unique = conn.execute("SELECT 1 FROM pg_constraint WHERE conrelid = 'packages'::regclass AND contype = 'u' AND pg_get_constraintdef(oid) LIKE '%UNIQUE (name)%'").fetchone()
