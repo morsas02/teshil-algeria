@@ -488,6 +488,12 @@ def init_db():
     else:
         conn.executescript(_ddl(SCHEMA, False))
 
+    if is_pg:
+        has_col = conn.execute("SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'is_active'").fetchone()
+        if not has_col:
+            conn.execute('ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 1')
+            conn.commit()
+
     try:
         conn.execute('ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 1')
         conn.commit()
@@ -495,11 +501,13 @@ def init_db():
         conn.rollback()
 
     if is_pg:
-        try:
-            conn.execute("ALTER TABLE packages ADD UNIQUE (name)")
-            conn.commit()
-        except Exception:
-            conn.rollback()
+        has_unique = conn.execute("SELECT 1 FROM pg_constraint WHERE conrelid = 'packages'::regclass AND contype = 'u' AND pg_get_constraintdef(oid) LIKE '%UNIQUE (name)%'").fetchone()
+        if not has_unique:
+            try:
+                conn.execute("ALTER TABLE packages ADD UNIQUE (name)")
+                conn.commit()
+            except Exception:
+                conn.rollback()
 
     if not conn.execute('SELECT id FROM users WHERE email = %s', (ADMIN_EMAIL,)).fetchone():
         hashed = generate_password_hash(ADMIN_PASSWORD)
