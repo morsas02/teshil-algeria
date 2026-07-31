@@ -9,7 +9,7 @@ from functools import wraps
 from datetime import datetime, timedelta
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-import sqlite3, os, re, json, uuid, traceback
+import sqlite3, os, re, json, uuid, glob, threading, traceback
 
 try:
     from dotenv import load_dotenv
@@ -27,6 +27,22 @@ app.config.update(
 )
 app.secret_key = os.environ.get('SECRET_KEY') or os.urandom(32).hex()
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
+
+STORAGE_ROOT = os.environ.get('STORAGE_ROOT', os.path.join(app.root_path, 'static'))
+
+@app.route('/static/uploads/<path:filename>')
+def serve_uploads(filename):
+    base = os.path.join(STORAGE_ROOT, 'uploads')
+    local = os.path.join(app.root_path, 'static', 'uploads')
+    source = base if os.path.exists(os.path.join(base, filename)) else local
+    return send_from_directory(source, filename)
+
+@app.route('/static/receipts/<path:filename>')
+def serve_receipt_files(filename):
+    base = os.path.join(STORAGE_ROOT, 'receipts')
+    local = os.path.join(app.root_path, 'static', 'receipts')
+    source = base if os.path.exists(os.path.join(base, filename)) else local
+    return send_from_directory(source, filename)
 
 @app.template_filter('date')
 def date_filter(val):
@@ -456,6 +472,14 @@ SCHEMA = '''
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
+    CREATE TABLE IF NOT EXISTS banner_clicks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        banner_id INTEGER NOT NULL,
+        referrer TEXT DEFAULT '',
+        clicked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (banner_id) REFERENCES banners(id) ON DELETE CASCADE
+    );
+
     CREATE TABLE IF NOT EXISTS ad_orders (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
@@ -475,6 +499,65 @@ SCHEMA = '''
         FOREIGN KEY (user_id) REFERENCES users(id)
     );
 '''
+
+def _table_names(conn):
+    if os.environ.get('DATABASE_URL'):
+        rows = conn.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'").fetchall()
+        return [r['table_name'] for r in rows]
+    return [r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").fetchall()]
+
+def _json_default(o):
+    if isinstance(o, (datetime,)):
+        return o.isoformat()
+    if isinstance(o, (bytes, bytearray)):
+        return o.decode('utf-8', 'replace')
+    return str(o)
+
+def write_data_backup():
+    backup_dir = os.path.join(STORAGE_ROOT, 'backups')
+    os.makedirs(backup_dir, exist_ok=True)
+    stamp = datetime.now().strftime('%Y%m%d-%H%M%S')
+    path = os.path.join(backup_dir, f'ta9eef-data-{stamp}.json')
+    conn = get_db()
+    data = {}
+    for table in _table_names(conn):
+        rows = conn.execute('SELECT * FROM ' + table).fetchall()
+        data[table] = [dict(r) for r in rows]
+    conn.close()
+    with open(path, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, default=_json_default)
+    keep = sorted(glob.glob(os.path.join(backup_dir, 'ta9eef-data-*.json')))[:-7]
+    for old in keep:
+        try:
+            os.remove(old)
+        except OSError:
+            pass
+    return path
+
+def _expire_overdue_orders():
+    conn = get_db()
+    conn.execute("UPDATE ad_orders SET status = 'expired', updated_at = CURRENT_TIMESTAMP WHERE status = 'active' AND ends_at IS NOT NULL AND ends_at <= CURRENT_TIMESTAMP")
+    conn.commit()
+    conn.close()
+
+def refresh_ad_order_statuses():
+    try:
+        _expire_overdue_orders()
+    except Exception:
+        traceback.print_exc()
+
+def _maintenance():
+    refresh_ad_order_statuses()
+    try:
+        write_data_backup()
+    except Exception:
+        traceback.print_exc()
+
+def _daily_loop():
+    _maintenance()
+    while True:
+        time.sleep(24 * 3600)
+        _maintenance()
 
 def init_db():
     conn = get_db()
@@ -560,6 +643,8 @@ def init_db():
     conn.close()
 
 init_db()
+
+threading.Thread(target=_daily_loop, daemon=True).start()
 
 def login_required(f):
     @wraps(f)
@@ -1146,7 +1231,7 @@ def upload_avatar():
         return redirect(url_for('profile'))
     file.seek(0)
     filename = f'avatar_{session["user_id"]}_{int(time.time())}.{ext}'
-    file.save(os.path.join(app.root_path, 'static', 'uploads', 'avatars', filename))
+    file.save(os.path.join(STORAGE_ROOT, 'uploads', 'avatars', filename))
     avatar_url = url_for('static', filename=f'uploads/avatars/{filename}')
     conn = get_db()
     conn.execute('UPDATE users SET avatar_url = %s WHERE id = %s', (avatar_url, session['user_id']))
@@ -1623,8 +1708,9 @@ def upload_receipt(request_id):
         return redirect(url_for('payment_status', request_id=request_id))
     file.seek(0)
     filename = f'receipt_{request_id}_{uuid.uuid4().hex[:8]}.{ext}'
-    os.makedirs('static/receipts', exist_ok=True)
-    file.save(f'static/receipts/{filename}')
+    receipt_dir = os.path.join(STORAGE_ROOT, 'receipts')
+    os.makedirs(receipt_dir, exist_ok=True)
+    file.save(os.path.join(receipt_dir, filename))
     conn.execute('UPDATE payment_requests SET receipt_path = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s',
                  (filename, req['id']))
     conn.commit()
@@ -2079,8 +2165,11 @@ def admin_request_status(req_id, action):
 @admin_required
 def admin_backup():
     if os.environ.get('DATABASE_URL'):
-        flash('النسخ الاحتياطي متاح فقط عند العمل بـ SQLite', 'warning')
-        return redirect(url_for('admin_dashboard'))
+        path = write_data_backup()
+        if not path:
+            flash('حدث خطأ أثناء إنشاء النسخة الاحتياطية', 'danger')
+            return redirect(url_for('admin_dashboard'))
+        return send_file(path, as_attachment=True, download_name=os.path.basename(path), mimetype='application/json')
     import tempfile
     src = sqlite3.connect(DB_PATH)
     fd, tmp = tempfile.mkstemp(suffix='.db')
@@ -2310,7 +2399,7 @@ def admin_add_banner():
             flash('حجم الصورة كبير جداً. الحد الأقصى 2 ميغابايت', 'danger')
             return redirect(url_for('admin_banners'))
         file.seek(0)
-        upload_dir = os.path.join(app.root_path, 'static', 'uploads', 'banners')
+        upload_dir = os.path.join(STORAGE_ROOT, 'uploads', 'banners')
         os.makedirs(upload_dir, exist_ok=True)
         filename = f'banner_{int(time.time())}_{uuid.uuid4().hex[:6]}.{ext}'
         file.save(os.path.join(upload_dir, filename))
@@ -2353,7 +2442,7 @@ def admin_delete_banner(bid):
         conn.commit()
         conn.close()
         if b['image_url'] and b['image_url'].startswith('/static/uploads/banners/'):
-            path = os.path.join(app.root_path, b['image_url'].lstrip('/'))
+            path = os.path.join(STORAGE_ROOT, b['image_url'].replace('/static/', '', 1))
             if os.path.exists(path):
                 try:
                     os.remove(path)
@@ -2371,6 +2460,7 @@ def banner_click(bid):
     b = conn.execute('SELECT link_url FROM banners WHERE id = %s AND is_active = 1 AND (ends_at IS NULL OR ends_at > CURRENT_TIMESTAMP)', (bid,)).fetchone()
     if b:
         conn.execute('UPDATE banners SET clicks = clicks + 1 WHERE id = %s', (bid,))
+        conn.execute('INSERT INTO banner_clicks (banner_id, referrer) VALUES (%s, %s)', (bid, (request.referrer or '')[:500]))
         conn.commit()
         conn.close()
         target = b['link_url'] or url_for('index')
@@ -2428,7 +2518,7 @@ def ad_create_order():
             flash('حجم الصورة كبير جداً. الحد الأقصى 2 ميغابايت', 'danger')
             return redirect(url_for('advertise'))
         file.seek(0)
-        upload_dir = os.path.join(app.root_path, 'static', 'uploads', 'ads')
+        upload_dir = os.path.join(STORAGE_ROOT, 'uploads', 'ads')
         os.makedirs(upload_dir, exist_ok=True)
         filename = f'ad_{int(time.time())}_{uuid.uuid4().hex[:6]}.{ext}'
         file.save(os.path.join(upload_dir, filename))
@@ -2462,6 +2552,7 @@ def ad_create_order():
 @app.route('/advertise/order/<int:oid>')
 @login_required
 def ad_order_status(oid):
+    refresh_ad_order_statuses()
     conn = get_db()
     order = conn.execute('SELECT * FROM ad_orders WHERE id = %s AND user_id = %s', (oid, session['user_id'])).fetchone()
     settings = {row['key']: row['value'] for row in conn.execute("SELECT * FROM settings WHERE key IN ('payment_ccp_rib','payment_ccp_name','payment_phone','payment_baridi')").fetchall()}
@@ -2509,8 +2600,9 @@ def ad_upload_receipt(oid):
         return redirect(url_for('ad_order_status', oid=oid))
     file.seek(0)
     filename = f'ad_receipt_{oid}_{uuid.uuid4().hex[:8]}.{ext}'
-    os.makedirs('static/receipts', exist_ok=True)
-    file.save(f'static/receipts/{filename}')
+    receipt_dir = os.path.join(STORAGE_ROOT, 'receipts')
+    os.makedirs(receipt_dir, exist_ok=True)
+    file.save(os.path.join(receipt_dir, filename))
     conn.execute("UPDATE ad_orders SET receipt_path = %s, status = 'paid', updated_at = CURRENT_TIMESTAMP WHERE id = %s", (filename, oid))
     conn.commit()
     conn.close()
@@ -2520,6 +2612,7 @@ def ad_upload_receipt(oid):
 @app.route('/my-ads')
 @login_required
 def my_ads():
+    refresh_ad_order_statuses()
     conn = get_db()
     orders = conn.execute('SELECT * FROM ad_orders WHERE user_id = %s ORDER BY id DESC', (session['user_id'],)).fetchall()
     conn.close()
@@ -2528,6 +2621,7 @@ def my_ads():
 @app.route('/admin/ads')
 @admin_required
 def admin_ads():
+    refresh_ad_order_statuses()
     conn = get_db()
     orders = conn.execute('''
         SELECT o.*, u.full_name, u.email
@@ -2541,11 +2635,17 @@ def admin_ads():
     revenue = conn.execute("SELECT COALESCE(SUM(price), 0) AS total FROM ad_orders WHERE status IN ('paid','active')").fetchone()
     pending = conn.execute("SELECT COUNT(*) AS c FROM ad_orders WHERE status = 'pending_payment'").fetchone()
     price_row = conn.execute("SELECT value FROM settings WHERE key = 'ad_price_per_week'").fetchone()
+    recent_clicks = conn.execute('''
+        SELECT bc.id, bc.referrer, bc.clicked_at, b.title AS banner_title
+        FROM banner_clicks bc JOIN banners b ON bc.banner_id = b.id
+        ORDER BY bc.id DESC LIMIT 30
+    ''').fetchall()
     conn.close()
     return render_template('admin/ads.html', orders=orders, banners=banners,
                            revenue=revenue['total'] if revenue else 0,
                            pending_count=pending['c'] if pending else 0,
-                           ad_price=price_row['value'] if price_row else AD_PRICE_PER_WEEK)
+                           ad_price=price_row['value'] if price_row else AD_PRICE_PER_WEEK,
+                           recent_clicks=recent_clicks)
 
 @app.route('/admin/ads/<int:oid>/confirm', methods=['POST'])
 @admin_required

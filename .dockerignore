@@ -8,3 +8,6 @@ ta9eef.db
 ta9eef.db-shm
 ta9eef.db-wal
 .DS_Store
+static/receipts/
+static/uploads/
+static/backups/

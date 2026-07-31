@@ -10,3 +10,7 @@ ta9eef.db-wal
 *.egg-info/
 dist/
 build/
+
+static/receipts/
+static/uploads/
+static/backups/
