@@ -20,7 +20,10 @@
 - **قاعدة البيانات**: PostgreSQL على Railway (خدمة "Postgres"). بيانات الإنتاج لا تُصفّر عند النشر.
 - **الملفات المرفوعة** (صور/إيصالات/نسخ احتياطية) تُحفظ في وحدة تخزين دائمة `talented-respect-volume`
   مركّبة في `/app/storage`، ومتغير البيئة `STORAGE_ROOT=/app/storage`. لا تصل الملفات عبر الـ container العابر.
-- **النشر**: من مجلد المشروع: `railway up --service talented-respect` (النشر عبر دفع GitHub لا يعمل بشكل موثوق).
+- **النشر**: من مجلد المشروع:
+  `railway up --service talented-respect -y -e production -w "anisztn's Projects"`
+  (يجب تمرير `-w "anisztn's Projects"` وإلا ينتظر اختيار الـ workspace بصمت ويعلق عند "Indexing..." في الجلسات غير التفاعلية.
+  يمكن إضافة `--detach` ثم متابعة الحالة بـ `railway deployment list`). النشر عبر دفع GitHub لا يعمل بشكل موثوق.
 - **نسخ احتياطي تلقائي**: التطبيق يكتب يومياً `STORAGE_ROOT/backups/ta9eef-data-*.json` (يحتفظ بآخر 7) عبر
   خيط خلفية `_daily_loop`. كما يمكن للمدير تنزيل نسخة يدوية من `/admin/backup`.
 - **قاعدة قبل أي تعديل على بيانات الإنتاج**: أخذ نسخة من `/admin/backup` أو JSON dump أولاً،
