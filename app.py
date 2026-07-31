@@ -2841,6 +2841,14 @@ def sitemap_xml():
 def serve_static(path):
     return send_from_directory('static', path)
 
+@app.route('/sw.js')
+def serve_sw():
+    return send_from_directory('static', 'sw.js', mimetype='application/javascript')
+
+@app.route('/manifest.webmanifest')
+def serve_manifest():
+    return send_from_directory('static', 'manifest.webmanifest', mimetype='application/manifest+json')
+
 @app.route('/<path:filename>')
 def serve_root_files(filename):
     if filename.startswith('google') and filename.endswith('.html'):

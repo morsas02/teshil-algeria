@@ -11,6 +11,14 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preload" href="/static/fonts/bootstrap-icons.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#059669">
+    <link rel="apple-touch-icon" href="/static/img/apple-touch-icon.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="تسهيل">
+    <meta name="application-name" content="تسهيل">
     {% set current_lang = session.get('lang', 'ar') %}
     <link rel="alternate" hreflang="ar" href="{{ request.url_root.rstrip('/') }}{{ request.path }}?lang=ar">
     <link rel="alternate" hreflang="fr" href="{{ request.url_root.rstrip('/') }}{{ request.path }}?lang=fr">
@@ -162,6 +170,11 @@
         .wa-float:hover { transform: scale(1.1); color: #fff; box-shadow: 0 10px 32px rgba(37,211,102,0.6); }
         .wa-float::after { content: ''; position: absolute; inset: 0; border-radius: 50%; border: 2px solid #25d366; animation: waPulse 1.8s ease-out infinite; }
         @keyframes waPulse { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(1.6); opacity: 0; } }
+        .install-banner { position: fixed; bottom: 0; left: 0; right: 0; z-index: 9991; background: #fff; box-shadow: 0 -6px 24px rgba(0,0,0,0.12); padding: 12px 16px; display: none; align-items: center; gap: 12px; border-top: 3px solid var(--primary); }
+        .install-banner img { width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0; }
+        .install-banner .ib-text { flex: 1; }
+        .install-banner .ib-text strong { display: block; font-size: 0.92rem; }
+        .install-banner .ib-text small { color: var(--gray-500); font-size: 0.78rem; }
         .lang-switch { display: inline-flex; align-items: center; gap: 4px; padding: 3px 12px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; background: rgba(255,255,255,0.1); color: var(--gray-400); border: 1px solid rgba(255,255,255,0.08); transition: all 0.3s; text-decoration: none; }
         .lang-switch:hover { background: rgba(255,255,255,0.2); color: #fff; transform: scale(1.05); }
         .feature-card { background: #fff; border-radius: var(--radius); padding: 28px 20px; text-align: center; border: 1px solid var(--gray-100); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); position: relative; }
@@ -419,5 +432,44 @@
     !function(){var l=document.getElementById('pageLoader');if(!l)return;setTimeout(function(){l.classList.add('hide')},350);var links=document.querySelectorAll('a:not([target="_blank"]):not([href^="#"]):not([href^="javascript"]):not([href^="mailto"]):not([href^="tel"]):not([href^="http"])');links.forEach(function(a){a.addEventListener('click',function(){l.classList.remove('hide')})})}();
     </script>
     <a class="wa-float" href="https://wa.me/213670729307?text=%D8%A7%D9%84%D8%B3%D9%84%D8%A7%D9%85%20%D8%B9%D9%84%D9%8A%D9%83%D9%85%D8%8C%20%D9%84%D8%AF%D9%8A%D9%8A%20%D8%B3%D8%A4%D8%A7%D9%84%20%D8%AD%D9%88%D9%84%20%D9%85%D9%86%D8%B5%D8%A9%20%D8%AA%D8%B3%D9%87%D9%8A%D9%84" target="_blank" rel="noopener" aria-label="تواصل عبر واتساب"><i class="bi bi-whatsapp"></i></a>
+    <div class="install-banner" id="installBanner">
+        <img src="/static/img/icon-192.png" alt="تسهيل">
+        <div class="ib-text">
+            <strong>ثبّت تطبيق تسهيل</strong>
+            <small>افتحه مباشرة من شاشتك الرئيسية كتطبيق أصلي</small>
+        </div>
+        <button class="btn btn-primary btn-sm" id="installBtn">تثبيت</button>
+        <button class="btn btn-light btn-sm" id="installDismiss">لاحقاً</button>
+    </div>
+    <script>
+        let deferredPrompt = null;
+        const installBanner = document.getElementById('installBanner');
+        const installBtn = document.getElementById('installBtn');
+        const installDismiss = document.getElementById('installDismiss');
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBanner.style.display = 'flex';
+        });
+        installBtn.addEventListener('click', async () => {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') installBanner.style.display = 'none';
+            deferredPrompt = null;
+        });
+        installDismiss.addEventListener('click', () => {
+            installBanner.style.display = 'none';
+            deferredPrompt = null;
+        });
+        window.addEventListener('appinstalled', () => {
+            installBanner.style.display = 'none';
+        });
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(() => {});
+            });
+        }
+    </script>
 </body>
 </html>
