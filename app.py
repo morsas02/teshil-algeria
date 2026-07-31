@@ -12,6 +12,17 @@ from flask_limiter.util import get_remote_address
 import sqlite3, os, re, json, uuid, glob, threading, traceback
 
 try:
+    from pywebpush import webpush
+    HAVE_PYWEBPUSH = True
+except Exception:
+    webpush = None
+    HAVE_PYWEBPUSH = False
+
+VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY', '')
+VAPID_PRIVATE_KEY = os.environ.get('VAPID_PRIVATE_KEY', '').replace('\\n', '\n')
+VAPID_SUBJECT = os.environ.get('VAPID_SUBJECT', 'mailto:admin@ta9eef.dz')
+
+try:
     from dotenv import load_dotenv
     load_dotenv()
 except ImportError:
@@ -422,6 +433,17 @@ SCHEMA = '''
         FOREIGN KEY (user_id) REFERENCES users(id)
     );
 
+    CREATE TABLE IF NOT EXISTS push_subscriptions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        endpoint TEXT NOT NULL,
+        p256dh TEXT NOT NULL,
+        auth TEXT NOT NULL,
+        user_agent TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id)
+    );
+
     CREATE TABLE IF NOT EXISTS reviews (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         employer_id INTEGER NOT NULL,
@@ -784,6 +806,86 @@ def notify_admin(title, message, link=None):
         conn.close()
     except Exception:
         pass
+
+def send_push(subscription, title, body, url=None):
+    if not (HAVE_PYWEBPUSH and VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY):
+        return False
+    try:
+        webpush(
+            subscription_info={
+                'endpoint': subscription['endpoint'],
+                'keys': {'p256dh': subscription['p256dh'], 'auth': subscription['auth']},
+            },
+            data=json.dumps({'title': title, 'body': body, 'url': url or '/'}),
+            vapid_private_key=VAPID_PRIVATE_KEY,
+            vapid_claims={'sub': VAPID_SUBJECT},
+        )
+        return True
+    except Exception:
+        return False
+
+def notify_all_subscribers(title, body, url=None):
+    try:
+        conn = get_db()
+        subs = conn.execute('SELECT DISTINCT endpoint, p256dh, auth FROM push_subscriptions').fetchall()
+        conn.close()
+    except Exception:
+        return
+    dead = []
+    for s in subs:
+        if not send_push(s, title, body, url):
+            dead.append(s['endpoint'])
+    if dead:
+        try:
+            conn = get_db()
+            for ep in dead:
+                conn.execute('DELETE FROM push_subscriptions WHERE endpoint = %s', (ep,))
+            conn.commit()
+            conn.close()
+        except Exception:
+            pass
+
+@app.route('/push/subscribe', methods=['POST'])
+@login_required
+def push_subscribe():
+    try:
+        data = request.get_json(silent=True) or {}
+        endpoint = data.get('endpoint')
+        keys = data.get('keys') or {}
+        p256dh = keys.get('p256dh')
+        auth = keys.get('auth')
+        if not (endpoint and p256dh and auth):
+            return jsonify({'ok': False, 'error': 'بيانات غير مكتملة'}), 400
+        conn = get_db()
+        conn.execute('DELETE FROM push_subscriptions WHERE endpoint = %s', (endpoint,))
+        conn.execute(
+            'INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth, user_agent) VALUES (%s, %s, %s, %s, %s)',
+            (session['user_id'], endpoint, p256dh, auth, (request.headers.get('User-Agent', '') or '')[:200])
+        )
+        conn.commit()
+        conn.close()
+        return jsonify({'ok': True})
+    except Exception:
+        return jsonify({'ok': False, 'error': 'خطأ في الحفظ'}), 500
+
+@app.route('/push/unsubscribe', methods=['POST'])
+def push_unsubscribe():
+    data = request.get_json(silent=True) or {}
+    endpoint = data.get('endpoint')
+    if not endpoint:
+        return jsonify({'ok': False}), 400
+    try:
+        conn = get_db()
+        conn.execute('DELETE FROM push_subscriptions WHERE endpoint = %s', (endpoint,))
+        conn.commit()
+        conn.close()
+        return jsonify({'ok': True})
+    except Exception:
+        return jsonify({'ok': False}), 500
+
+@app.route('/push/vapid-key')
+def push_vapid_key():
+    return jsonify({'key': VAPID_PUBLIC_KEY})
 
 def get_stats():
     conn = get_db()
@@ -2117,16 +2219,20 @@ def admin_handle_job(job_id, action):
         return redirect(url_for('admin_jobs'))
 
     conn = get_db()
+    approved_job_title = None
+    approved_job_wilaya = None
     if action == 'feature':
         job = conn.execute('SELECT is_featured FROM jobs WHERE id = %s', (job_id,)).fetchone()
         if job:
             conn.execute('UPDATE jobs SET is_featured = %s WHERE id = %s', (0 if job['is_featured'] else 1, job_id))
     elif action == 'approve':
         conn.execute("UPDATE jobs SET status = 'approved' WHERE id = %s", (job_id,))
-        job = conn.execute('SELECT employer_id, title FROM jobs WHERE id = %s', (job_id,)).fetchone()
+        job = conn.execute('SELECT employer_id, title, wilaya, category FROM jobs WHERE id = %s', (job_id,)).fetchone()
         employer_user = conn.execute('SELECT user_id FROM employers WHERE id = %s', (job['employer_id'],)).fetchone()
         notify(employer_user['user_id'], 'تم الموافقة على وظيفتك',
                f'تمت الموافقة على نشر وظيفة "{job["title"]}" وهي الآن متاحة للباحثين عن عمل.', 'success', '/my-jobs')
+        approved_job_title = job['title']
+        approved_job_wilaya = job['wilaya']
     elif action == 'reject':
         job = conn.execute('SELECT j.*, u.wallet_balance FROM jobs j JOIN employers e ON j.employer_id = e.id JOIN users u ON e.user_id = u.id WHERE j.id = %s', (job_id,)).fetchone()
         if job:
@@ -2144,6 +2250,10 @@ def admin_handle_job(job_id, action):
 
     conn.commit()
     conn.close()
+    if approved_job_title:
+        url = url_for('job_detail', job_id=job_id)
+        loc = f'في {approved_job_wilaya}' if approved_job_wilaya else ''
+        notify_all_subscribers('وظيفة جديدة!', f'{approved_job_title} {loc} — تقدم الآن على تسهيل', url)
     flash('تم تحديث حالة الوظيفة', 'success')
     return redirect(url_for('admin_jobs'))
 

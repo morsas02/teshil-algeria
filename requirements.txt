@@ -5,3 +5,4 @@ requests==2.32.3
 psycopg2-binary==2.9.10
 flask-limiter==3.10.0
 python-dotenv==1.0.1
+pywebpush==2.0.1
