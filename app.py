@@ -315,6 +315,24 @@ SCHEMA = '''
         FOREIGN KEY (job_id) REFERENCES jobs(id)
     );
 
+    CREATE TABLE IF NOT EXISTS requests (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        worker_id INTEGER NOT NULL,
+        type TEXT NOT NULL CHECK(type IN ('request','appointment','info')),
+        employer_id INTEGER,
+        job_id INTEGER,
+        subject TEXT,
+        message TEXT,
+        preferred_date TEXT,
+        status TEXT DEFAULT 'pending' CHECK(status IN ('pending','accepted','rejected','completed','answered')),
+        admin_reply TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (worker_id) REFERENCES workers(id),
+        FOREIGN KEY (employer_id) REFERENCES employers(id),
+        FOREIGN KEY (job_id) REFERENCES jobs(id)
+    );
+
     CREATE TABLE IF NOT EXISTS notifications (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
@@ -1280,7 +1298,7 @@ def apply_job(job_id):
         job = conn.execute('SELECT employer_id, title FROM jobs WHERE id = %s', (job_id,)).fetchone()
         employer_user = conn.execute('SELECT user_id FROM employers WHERE id = %s', (job['employer_id'],)).fetchone()
         notify(employer_user['user_id'], 'طلب توظيف جديد',
-               f'تم استلام طلب جديد على وظيفة "{job["title"]}"', 'info', f'/applications')
+               f'تم استلام طلب جديد على وظيفة "{job["title"]}"', 'info', f'/applications', conn=conn)
         flash('تم التقديم على الوظيفة بنجاح!', 'success')
     conn.commit()
     conn.close()
@@ -1301,6 +1319,138 @@ def save_job(job_id):
     conn.commit()
     conn.close()
     return redirect(url_for('job_detail', job_id=job_id))
+
+@app.route('/requests/create', methods=['POST'])
+@worker_required
+def create_request():
+    rtype = request.form.get('type', 'request')
+    if rtype not in ('request', 'appointment', 'info'):
+        flash('نوع الطلب غير صالح', 'danger')
+        return redirect(request.referrer or url_for('index'))
+
+    conn = get_db()
+    worker = conn.execute('SELECT id FROM workers WHERE user_id = %s', (session['user_id'],)).fetchone()
+    if not worker:
+        conn.close()
+        flash('الرجاء إكمال ملفك الشخصي أولاً', 'warning')
+        return redirect(url_for('profile'))
+
+    employer_id = request.form.get('employer_id', type=int)
+    job_id = request.form.get('job_id', type=int)
+    subject = (request.form.get('subject') or '').strip()
+    message = (request.form.get('message') or '').strip()
+    preferred_date = (request.form.get('preferred_date') or '').strip()
+
+    if rtype == 'info':
+        employer_id = None
+    else:
+        if not employer_id:
+            conn.close()
+            flash('الرجاء اختيار المؤسسة', 'danger')
+            return redirect(request.referrer or url_for('index'))
+
+    if not message:
+        conn.close()
+        flash('الرجاء كتابة الرسالة', 'danger')
+        return redirect(request.referrer or url_for('index'))
+
+    conn.execute('''
+        INSERT INTO requests (worker_id, type, employer_id, job_id, subject, message, preferred_date)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+    ''', (worker['id'], rtype, employer_id, job_id, subject, message, preferred_date))
+
+    if rtype != 'info' and employer_id:
+        employer = conn.execute('SELECT user_id FROM employers WHERE id = %s', (employer_id,)).fetchone()
+        if employer:
+            type_label = {'request': 'طلب جديد من موظف', 'appointment': 'حجز موعد جديد'}.get(rtype, 'طلب جديد')
+            notify(employer['user_id'], type_label, subject or message[:100], 'info', '/employer/requests', conn=conn)
+
+    conn.commit()
+    conn.close()
+
+    type_msg = {'request': 'تم إرسال طلبك إلى رب العمل بنجاح',
+                'appointment': 'تم حجز الموعد بنجاح',
+                'info': 'تم إرسال طلبك إلى الإدارة بنجاح'}.get(rtype, 'تم إرسال الطلب')
+    flash(type_msg, 'success')
+    return redirect(request.referrer or url_for('my_requests'))
+
+@app.route('/my-requests')
+@worker_required
+def my_requests():
+    conn = get_db()
+    worker = conn.execute('SELECT id FROM workers WHERE user_id = %s', (session['user_id'],)).fetchone()
+    reqs = conn.execute('''
+        SELECT r.*, e.company_name, j.title as job_title
+        FROM requests r
+        LEFT JOIN employers e ON r.employer_id = e.id
+        LEFT JOIN jobs j ON r.job_id = j.id
+        WHERE r.worker_id = %s
+        ORDER BY r.created_at DESC
+    ''', (worker['id'],)).fetchall()
+    conn.close()
+    return render_template('my_requests.html', reqs=reqs)
+
+@app.route('/requests/<int:req_id>/cancel', methods=['POST'])
+@worker_required
+def cancel_request(req_id):
+    conn = get_db()
+    worker = conn.execute('SELECT id FROM workers WHERE user_id = %s', (session['user_id'],)).fetchone()
+    conn.execute("UPDATE requests SET status = 'rejected' WHERE id = %s AND worker_id = %s AND status = 'pending'",
+                 (req_id, worker['id']))
+    conn.commit()
+    conn.close()
+    flash('تم إلغاء الطلب', 'info')
+    return redirect(url_for('my_requests'))
+
+@app.route('/employer/requests')
+@employer_required
+def employer_requests():
+    conn = get_db()
+    employer = conn.execute('SELECT id FROM employers WHERE user_id = %s', (session['user_id'],)).fetchone()
+    type_filter = request.args.get('type', '')
+    status_filter = request.args.get('status', '')
+
+    query = '''
+        SELECT r.*, w.experience_level, w.skills, u.full_name, u.phone, u.email, u.avatar_url,
+               j.title as job_title
+        FROM requests r
+        JOIN workers w ON r.worker_id = w.id
+        JOIN users u ON w.user_id = u.id
+        LEFT JOIN jobs j ON r.job_id = j.id
+        WHERE r.employer_id = %s AND r.type != 'info'
+    '''
+    params = [employer['id']]
+    if type_filter:
+        query += " AND r.type = %s"
+        params.append(type_filter)
+    if status_filter:
+        query += " AND r.status = %s"
+        params.append(status_filter)
+    query += " ORDER BY r.created_at DESC"
+
+    reqs = conn.execute(query, params).fetchall()
+    conn.close()
+    return render_template('employer_requests.html', reqs=reqs, type_filter=type_filter, status_filter=status_filter)
+
+@app.route('/employer/requests/<int:req_id>/<action>', methods=['POST'])
+@employer_required
+def handle_employer_request(req_id, action):
+    if action not in ('accepted', 'rejected', 'completed'):
+        return redirect(url_for('employer_requests'))
+    conn = get_db()
+    employer = conn.execute('SELECT id FROM employers WHERE user_id = %s', (session['user_id'],)).fetchone()
+    req = conn.execute('SELECT * FROM requests WHERE id = %s AND employer_id = %s AND type != %s',
+                       (req_id, employer['id'], 'info')).fetchone()
+    if req:
+        conn.execute('UPDATE requests SET status = %s WHERE id = %s', (action, req_id))
+        worker = conn.execute('SELECT user_id FROM workers WHERE id = %s', (req['worker_id'],)).fetchone()
+        status_text = {'accepted': 'تم قبول طلبك', 'rejected': 'تم رفض طلبك', 'completed': 'تم إتمام طلبك'}
+        notify(worker['user_id'], f'تحديث حالة الطلب',
+               status_text.get(action, 'تم تحديث حالة طلبك'), 'info', '/my-requests', conn=conn)
+    conn.commit()
+    conn.close()
+    flash('تم تحديث حالة الطلب', 'success')
+    return redirect(url_for('employer_requests'))
 
 @app.route('/applications')
 @employer_required
@@ -1777,6 +1927,71 @@ def admin_applications():
     ''').fetchall()
     conn.close()
     return render_template('admin/applications.html', apps=apps)
+
+@app.route('/admin/requests')
+@admin_required
+def admin_requests():
+    conn = get_db()
+    type_filter = request.args.get('type', '')
+    status_filter = request.args.get('status', '')
+
+    query = '''
+        SELECT r.*, w.experience_level, w.skills,
+               u1.full_name as worker_name, u1.phone, u1.email,
+               e.company_name, u2.full_name as employer_name,
+               j.title as job_title
+        FROM requests r
+        JOIN workers w ON r.worker_id = w.id
+        JOIN users u1 ON w.user_id = u1.id
+        LEFT JOIN employers e ON r.employer_id = e.id
+        LEFT JOIN users u2 ON e.user_id = u2.id
+        LEFT JOIN jobs j ON r.job_id = j.id
+        WHERE 1=1
+    '''
+    params = []
+    if type_filter:
+        query += " AND r.type = %s"
+        params.append(type_filter)
+    if status_filter:
+        query += " AND r.status = %s"
+        params.append(status_filter)
+    query += " ORDER BY r.created_at DESC LIMIT 100"
+
+    reqs = conn.execute(query, params).fetchall()
+    conn.close()
+    return render_template('admin/requests.html', reqs=reqs, type_filter=type_filter, status_filter=status_filter)
+
+@app.route('/admin/requests/<int:req_id>/reply', methods=['POST'])
+@admin_required
+def admin_reply_request(req_id):
+    reply = (request.form.get('admin_reply') or '').strip()
+    conn = get_db()
+    req = conn.execute('SELECT * FROM requests WHERE id = %s', (req_id,)).fetchone()
+    if req and reply:
+        conn.execute("UPDATE requests SET admin_reply = %s, status = 'answered', updated_at = CURRENT_TIMESTAMP WHERE id = %s",
+                     (reply, req_id))
+        worker = conn.execute('SELECT user_id FROM workers WHERE id = %s', (req['worker_id'],)).fetchone()
+        notify(worker['user_id'], 'رد من الإدارة', reply[:100], 'info', '/my-requests', conn=conn)
+    conn.commit()
+    conn.close()
+    flash('تم إرسال الرد', 'success')
+    return redirect(url_for('admin_requests'))
+
+@app.route('/admin/requests/<int:req_id>/status/<action>', methods=['POST'])
+@admin_required
+def admin_request_status(req_id, action):
+    if action not in ('accepted', 'rejected', 'completed', 'pending'):
+        return redirect(url_for('admin_requests'))
+    conn = get_db()
+    req = conn.execute('SELECT * FROM requests WHERE id = %s', (req_id,)).fetchone()
+    if req:
+        conn.execute('UPDATE requests SET status = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s', (action, req_id))
+        worker = conn.execute('SELECT user_id FROM workers WHERE id = %s', (req['worker_id'],)).fetchone()
+        notify(worker['user_id'], 'تحديث حالة الطلب', f'تم تغيير حالة طلبك إلى: {action}', 'info', '/my-requests', conn=conn)
+    conn.commit()
+    conn.close()
+    flash('تم تحديث الحالة', 'success')
+    return redirect(url_for('admin_requests'))
 
 @app.route('/admin/messages')
 @admin_required

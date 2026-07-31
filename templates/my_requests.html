@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}طلباتي{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="/">الرئيسية</a></li>
+                <li class="breadcrumb-item active">طلباتي</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold mb-0"><i class="bi bi-send"></i> طلباتي</h4>
+        <a href="/jobs" class="btn btn-primary btn-sm"><i class="bi bi-search"></i> تصفح الوظائف</a>
+    </div>
+
+    {% if reqs %}
+    <div class="table-responsive card">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>النوع</th>
+                    <th>الجهة</th>
+                    <th>الموضوع</th>
+                    <th>التاريخ المفضل</th>
+                    <th>الحالة</th>
+                    <th>رد الإدارة</th>
+                    <th>تاريخ الإرسال</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in reqs %}
+                <tr>
+                    <td>
+                        {% if r.type == 'request' %}
+                            <span class="badge bg-primary">طلب لرب العمل</span>
+                        {% elif r.type == 'appointment' %}
+                            <span class="badge bg-success">حجز موعد</span>
+                        {% else %}
+                            <span class="badge bg-secondary">طلب معلومات من الإدارة</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if r.type == 'info' %}
+                            إدارة المنصة
+                        {% else %}
+                            <strong>{{ r.company_name or 'مؤسسة' }}</strong>
+                            {% if r.job_title %}<br><small class="text-muted">{{ r.job_title }}</small>{% endif %}
+                        {% endif %}
+                    </td>
+                    <td>{{ r.subject or r.message[:40] }}</td>
+                    <td>{{ r.preferred_date or '-' }}</td>
+                    <td>
+                        {% if r.status == 'pending' %}
+                            <span class="badge bg-warning text-dark">قيد المراجعة</span>
+                        {% elif r.status == 'accepted' %}
+                            <span class="badge bg-success">مقبول</span>
+                        {% elif r.status == 'rejected' %}
+                            <span class="badge bg-danger">مرفوض</span>
+                        {% elif r.status == 'answered' %}
+                            <span class="badge bg-info">تم الرد</span>
+                        {% elif r.status == 'completed' %}
+                            <span class="badge bg-primary">مكتمل</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ r.admin_reply or '-' }}</td>
+                    <td>{{ r.created_at|date }}</td>
+                    <td>
+                        {% if r.status == 'pending' %}
+                        <form method="POST" action="/requests/{{ r.id }}/cancel" class="d-inline">
+                            <button class="btn btn-sm btn-outline-danger">إلغاء</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-inbox"></i>
+        <h4>لا توجد طلبات بعد</h4>
+        <p class="text-muted">أرسل طلباً لرب العمل، احجز موعداً، أو اطلب معلومات من الإدارة</p>
+        <a href="/jobs" class="btn btn-primary mt-2">تصفح الوظائف</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

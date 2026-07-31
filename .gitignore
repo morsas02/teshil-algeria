@@ -3,6 +3,8 @@ __pycache__/
 *.pyc
 *.pyo
 ta9eef.db
+ta9eef.db-shm
+ta9eef.db-wal
 .env
 .DS_Store
 *.egg-info/

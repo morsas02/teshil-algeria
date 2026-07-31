@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}طلبات الموظفين{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="/">الرئيسية</a></li>
+                <li class="breadcrumb-item active">طلبات الموظفين</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold mb-0"><i class="bi bi-inbox"></i> طلبات الموظفين</h4>
+        <div class="d-flex gap-2">
+            <a href="/employer/requests?type=request" class="btn btn-sm {% if type_filter == 'request' %}btn-primary{% else %}btn-outline-primary{% endif %}">طلبات</a>
+            <a href="/employer/requests?type=appointment" class="btn btn-sm {% if type_filter == 'appointment' %}btn-primary{% else %}btn-outline-primary{% endif %}">مواعيد</a>
+            <a href="/employer/requests" class="btn btn-sm btn-outline-secondary">الكل</a>
+        </div>
+    </div>
+
+    {% if reqs %}
+    {% for r in reqs %}
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="d-flex align-items-center gap-2">
+                    {% if r.avatar_url %}
+                    <img src="{{ r.avatar_url }}" class="avatar-img-sm" alt="{{ r.full_name }}">
+                    {% else %}
+                    <div class="avatar-sm">{{ r.full_name[0] }}</div>
+                    {% endif %}
+                    <div>
+                        <strong>{{ r.full_name }}</strong>
+                        <small class="text-muted d-block">{{ r.email }}</small>
+                    </div>
+                </div>
+                <div class="d-flex gap-1">
+                    {% if r.type == 'request' %}
+                        <span class="badge bg-primary">طلب</span>
+                    {% else %}
+                        <span class="badge bg-success">حجز موعد</span>
+                    {% endif %}
+                    {% if r.status == 'pending' %}
+                        <span class="badge bg-warning text-dark">قيد المراجعة</span>
+                    {% elif r.status == 'accepted' %}
+                        <span class="badge bg-success">مقبول</span>
+                    {% elif r.status == 'rejected' %}
+                        <span class="badge bg-danger">مرفوض</span>
+                    {% elif r.status == 'completed' %}
+                        <span class="badge bg-primary">مكتمل</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="mt-2">
+                {% if r.job_title %}<div><small class="text-muted"><i class="bi bi-briefcase"></i> الوظيفة: <strong>{{ r.job_title }}</strong></small></div>{% endif %}
+                {% if r.preferred_date %}<div><small class="text-muted"><i class="bi bi-calendar"></i> التاريخ المفضل: <strong>{{ r.preferred_date }}</strong></small></div>{% endif %}
+                {% if r.subject %}<div class="mt-1"><strong>{{ r.subject }}</strong></div>{% endif %}
+                <div class="text-muted mt-1">{{ r.message }}</div>
+                {% if r.experience_level %}<div class="mt-1"><small><i class="bi bi-mortarboard"></i> {{ r.experience_level }}</small></div>{% endif %}
+                {% if r.phone %}<div class="mt-1"><small><i class="bi bi-telephone"></i> {{ r.phone }}</small></div>{% endif %}
+            </div>
+
+            {% if r.status == 'pending' %}
+            <div class="d-flex gap-2 mt-3 pt-2 border-top">
+                <form method="POST" action="/employer/requests/{{ r.id }}/accepted">
+                    <button class="btn btn-sm btn-success"><i class="bi bi-check-lg"></i> قبول</button>
+                </form>
+                <form method="POST" action="/employer/requests/{{ r.id }}/rejected">
+                    <button class="btn btn-sm btn-outline-danger">رفض</button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-inbox"></i>
+        <h4>لا توجد طلبات</h4>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -254,13 +254,16 @@
                     {% if session.user_id %}
                         {% if session.user_type == 'admin' %}
                             <li class="nav-item"><a class="nav-link" href="/admin"><i class="bi bi-speedometer2"></i> لوحة التحكم</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/admin/requests"><i class="bi bi-inbox"></i> الطلبات</a></li>
                         {% elif session.user_type == 'employer' %}
                             <li class="nav-item"><a class="nav-link" href="/jobs/create"><i class="bi bi-plus-circle text-primary"></i> نشر وظيفة</a></li>
                             <li class="nav-item"><a class="nav-link" href="/my-jobs"><i class="bi bi-list-task"></i> وظائفي</a></li>
                             <li class="nav-item"><a class="nav-link" href="/applications"><i class="bi bi-inbox"></i> الطلبات</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/employer/requests"><i class="bi bi-envelope-paper"></i> طلبات الموظفين</a></li>
                             <li class="nav-item"><a class="nav-link" href="/employer/wallet"><i class="bi bi-wallet2"></i> المحفظة {% if wallet_balance is defined %}<span class="badge bg-success ms-1">{{ wallet_balance }}</span>{% endif %}</a></li>
                         {% else %}
                             <li class="nav-item"><a class="nav-link" href="/my-applications"><i class="bi bi-send"></i> طلباتي</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/my-requests"><i class="bi bi-envelope-paper"></i> طلباتي</a></li>
                             <li class="nav-item"><a class="nav-link" href="/saved-jobs"><i class="bi bi-bookmark"></i> المحفوظات</a></li>
                         {% endif %}
                         <li class="nav-item dropdown">

@@ -65,7 +65,7 @@
                     <p class="text-muted">{{ job.benefits }}</p>
                     {% endif %}
 
-                    <div class="d-flex gap-2 mt-4 pt-3 border-top">
+                    <div class="d-flex gap-2 flex-wrap mt-4 pt-3 border-top">
                         {% if session.user_id and session.user_type == 'worker' %}
                             {% if has_applied %}
                                 <button class="btn btn-secondary" disabled><i class="bi bi-check-circle"></i> تم التقديم</button>
@@ -74,6 +74,15 @@
                                     <i class="bi bi-send"></i> تقدم الآن
                                 </button>
                             {% endif %}
+                            <button class="btn btn-lg btn-outline-success" data-bs-toggle="modal" data-bs-target="#requestModal">
+                                <i class="bi bi-envelope-paper"></i> أرسل طلباً
+                            </button>
+                            <button class="btn btn-lg btn-outline-primary" data-bs-toggle="modal" data-bs-target="#appointmentModal">
+                                <i class="bi bi-calendar-check"></i> احجز موعداً
+                            </button>
+                            <button class="btn btn-lg btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#infoModal">
+                                <i class="bi bi-question-circle"></i> اطلب معلومات من الإدارة
+                            </button>
                             <form method="POST" action="/jobs/{{ job.id }}/save">
                                 <button class="btn btn-lg {% if is_saved %}btn-success{% else %}btn-outline-primary{% endif %}">
                                     <i class="bi {% if is_saved %}bi-bookmark-check{% else %}bi-bookmark{% endif %}"></i>
@@ -161,6 +170,97 @@
                 </div>
                 <div class="modal-footer">
                     <button type="submit" class="btn btn-primary btn-lg w-100"><i class="bi bi-send"></i> إرسال الطلب</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if session.user_id and session.user_type == 'worker' %}
+<div class="modal fade" id="requestModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="bi bi-envelope-paper"></i> أرسل طلباً إلى {{ job.company_name }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/requests/create">
+                <input type="hidden" name="type" value="request">
+                <input type="hidden" name="employer_id" value="{{ job.employer_id }}">
+                <input type="hidden" name="job_id" value="{{ job.id }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">الموضوع</label>
+                        <input type="text" name="subject" class="form-control" placeholder="مثال: طلب الانضمام لفريقكم">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">الرسالة <span class="text-danger">*</span></label>
+                        <textarea name="message" class="form-control" rows="4" required placeholder="اكتب رسالتك إلى رب العمل..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary btn-lg w-100"><i class="bi bi-send"></i> إرسال الطلب</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="appointmentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="bi bi-calendar-check"></i> حجز موعد مع {{ job.company_name }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/requests/create">
+                <input type="hidden" name="type" value="appointment">
+                <input type="hidden" name="employer_id" value="{{ job.employer_id }}">
+                <input type="hidden" name="job_id" value="{{ job.id }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">التاريخ المفضل <span class="text-danger">*</span></label>
+                        <input type="date" name="preferred_date" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">الموضوع</label>
+                        <input type="text" name="subject" class="form-control" placeholder="مثال: مقابلة عمل">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">الرسالة</label>
+                        <textarea name="message" class="form-control" rows="3" required placeholder="اكتب تفاصيل الموعد..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success btn-lg w-100"><i class="bi bi-calendar-check"></i> تأكيد الحجز</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="infoModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="bi bi-question-circle"></i> طلب معلومات من الإدارة</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/requests/create">
+                <input type="hidden" name="type" value="info">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">الموضوع</label>
+                        <input type="text" name="subject" class="form-control" placeholder="مثال: استفسار عن الوظيفة">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">السؤال <span class="text-danger">*</span></label>
+                        <textarea name="message" class="form-control" rows="4" required placeholder="اكتب سؤالك للإدارة..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-secondary btn-lg w-100"><i class="bi bi-send"></i> إرسال السؤال</button>
                 </div>
             </form>
         </div>
