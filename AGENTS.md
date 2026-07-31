@@ -26,6 +26,15 @@
 - **قاعدة قبل أي تعديل على بيانات الإنتاج**: أخذ نسخة من `/admin/backup` أو JSON dump أولاً،
   وحفظها في `/Users/dz/ta9eef-algeria-backups`.
 
+## البريد الإلكتروني (Brevo)
+
+- Railway يحجب منافذ SMTP (25/465/587) — إرسال عبر Gmail SMTP لا يعمل من الإنتاج أبداً.
+- البريد يُرسل عبر **Brevo API** (HTTPS/443): متغيرات `BREVO_API_KEY` و`BREVO_SENDER` و`BREVO_SENDER_NAME`
+  مضبوطة على Railway. المرسل الثابت: `morsizitouni132@gmail.com` (موثّق في Brevo).
+- في Brevo: تأكد أن خيار "Restrict API calls to authorised IPs only" معطّل (وإلا يُرفض الطلب بـ 401).
+- الإرسال يتم في خيط خلفية بمهلة 15 ثانية حتى لا يُعلّق الطلب أو يُقتل الـ worker.
+- حالياً البريد يُستخدم فقط في "نسيت كلمة المرور" عبر `send_email()` في `app.py`.
+
 ## ملاحظات تقنية
 
 - عند العمل مع PostgreSQL: لا تمرّر قائمة معاملات فارغة `()` لاستعلامات تحتوي `%` حرفياً (IndexError)،

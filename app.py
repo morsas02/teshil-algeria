@@ -149,9 +149,9 @@ def _send_via_brevo(to, subject, text, html=None):
             resp = requests.post('https://api.brevo.com/v3/smtp/email',
                                  json=payload, headers={'api-key': BREVO_API_KEY},
                                  timeout=15)
-            print(f'Brevo send: {resp.status_code} {resp.text[:200]}')
+            print(f'Brevo send: {resp.status_code} {resp.text[:200]}', flush=True)
         except Exception as e:
-            print(f'Brevo error: {e}')
+            print(f'Brevo error: {e}', flush=True)
     threading.Thread(target=_run, daemon=True).start()
 
 def send_email(to, subject, text, html=None):
