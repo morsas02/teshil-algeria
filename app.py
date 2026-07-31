@@ -771,6 +771,20 @@ def get_unread_count(user_id):
     conn.close()
     return count['c']
 
+def notify_admin(title, message, link=None):
+    try:
+        conn = get_db()
+        admin = conn.execute("SELECT id FROM users WHERE user_type = 'admin' ORDER BY id LIMIT 1").fetchone()
+        if admin:
+            conn.execute(
+                'INSERT INTO notifications (user_id, title, message, type, link) VALUES (%s, %s, %s, %s, %s)',
+                (admin['id'], title, message, 'admin', link)
+            )
+            conn.commit()
+        conn.close()
+    except Exception:
+        pass
+
 def get_stats():
     conn = get_db()
     stats = {
@@ -1754,6 +1768,12 @@ def upload_receipt(request_id):
                  (filename, req['id']))
     conn.commit()
     conn.close()
+    payer = session.get('full_name', 'مستخدم')
+    notify_admin('إيصال دفع مرفوع', f'{payer} رفع إيصال دفع للطلب {request_id} بقيمة {req["amount"]} دج', link='/admin/transactions')
+    send_email(ADMIN_EMAIL, f'إيصال دفع مرفوع - تسهيل ({request_id})',
+               f'تم رفع إيصال الدفع للطلب {request_id}:\n'
+               f'المستخدم: {payer}\nالمبلغ: {req["amount"]} دج\n'
+               f'راجعه من لوحة الإدارة: https://talented-respect-production.up.railway.app/admin/transactions')
     flash('تم رفع الإيصال بنجاح. سنقوم بمراجعته قريباً.', 'success')
     return redirect(url_for('payment_status', request_id=request_id))
 
@@ -1856,6 +1876,13 @@ def create_payment():
     ''', (session['user_id'], ref_pkg_id, amount, credits, reference))
     conn.commit()
     conn.close()
+    payer = session.get('full_name', 'مستخدم')
+    notify_admin('طلب دفع جديد', f'{payer} أنشأ طلب دفع {reference} بقيمة {amount} دج ({description})', link='/admin/transactions')
+    send_email(ADMIN_EMAIL, f'طلب دفع جديد - تسهيل ({reference})',
+               f'طلب دفع جديد في انتظار المراجعة:\n'
+               f'المستخدم: {payer}\nالمرجع: {reference}\nالمبلغ: {amount} دج\n'
+               f'الوصف: {description}\n'
+               f'راجعه من لوحة الإدارة: https://talented-respect-production.up.railway.app/admin/transactions')
     return redirect(url_for('payment_status', request_id=reference))
 
 @app.route('/employer/payment/<request_id>')
