@@ -130,6 +130,28 @@ SMTP_PORT = int(os.environ.get('SMTP_PORT', '587'))
 SMTP_USER = os.environ.get('SMTP_USER', '')
 SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '')
 
+def send_email(to, subject, text, html=None):
+    if not (SMTP_USER and SMTP_PASSWORD):
+        return
+    def _run():
+        try:
+            msg = EmailMessage()
+            msg['Subject'] = subject
+            msg['From'] = SMTP_USER
+            msg['To'] = to
+            msg.set_content(text)
+            if html:
+                msg.add_alternative(html, subtype='html')
+            context = ssl.create_default_context()
+            with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as server:
+                server.starttls(context=context)
+                server.login(SMTP_USER, SMTP_PASSWORD)
+                server.send_message(msg)
+            print(f'Email sent to {to}')
+        except Exception as e:
+            print(f'SMTP error: {e}')
+    threading.Thread(target=_run, daemon=True).start()
+
 ALGERIAN_WILAYAS = [
     "أدرار", "الشلف", "الأغواط", "أم البواقي", "باتنة", "بجاية", "بسكرة", "بشار",
     "البليدة", "البويرة", "تمنراست", "تبسة", "تلمسان", "تيارت", "تيزي وزو", "الجزائر",
@@ -1067,13 +1089,10 @@ def forgot_password():
             conn.commit()
             conn.close()
             reset_link = url_for('reset_password', token=token, _external=True)
-            if SMTP_USER and SMTP_PASSWORD:
-                try:
-                    msg = EmailMessage()
-                    msg['Subject'] = 'إعادة تعيين كلمة المرور - تسهيل'
-                    msg['From'] = SMTP_USER
-                    msg['To'] = email
-                    msg.set_content(f'''
+            send_email(
+                email,
+                'إعادة تعيين كلمة المرور - تسهيل',
+                f'''
     مرحباً {user['full_name']}،
 
     لقد تلقينا طلباً لإعادة تعيين كلمة المرور لحسابك في منصة تسهيل.
@@ -1085,8 +1104,8 @@ def forgot_password():
 
     شكراً،
     فريق تسهيل
-                    ''')
-                    msg.add_alternative(f'''
+                ''',
+                f'''
     <html><body style="font-family:Cairo,sans-serif;background:#f9fafb;padding:32px">
     <div style="max-width:480px;margin:auto;background:#fff;border-radius:16px;padding:32px;box-shadow:0 4px 12px rgba(0,0,0,0.1)">
     <div style="text-align:center;margin-bottom:24px"><span style="font-size:1.5rem;font-weight:800;color:#059669">تسهيل</span></div>
@@ -1099,14 +1118,8 @@ def forgot_password():
     <p style="color:#9ca3af;font-size:0.85rem">إذا لم تطلب إعادة التعيين، تجاهل هذه الرسالة.</p>
     <p style="color:#9ca3af;font-size:0.85rem;margin-top:16px">فريق تسهيل</p>
     </div></body></html>
-                    ''', subtype='html')
-                    context = ssl.create_default_context()
-                    with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
-                        server.starttls(context=context)
-                        server.login(SMTP_USER, SMTP_PASSWORD)
-                        server.send_message(msg)
-                except Exception as e:
-                    print(f'SMTP error: {e}')
+                ''',
+            )
         else:
             conn.close()
         flash('إذا كان البريد الإلكتروني مسجلاً، ستتلقى رابط إعادة التعيين', 'success')
