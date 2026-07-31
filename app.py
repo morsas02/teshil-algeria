@@ -130,7 +130,33 @@ SMTP_PORT = int(os.environ.get('SMTP_PORT', '587'))
 SMTP_USER = os.environ.get('SMTP_USER', '')
 SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '')
 
+BREVO_API_KEY = os.environ.get('BREVO_API_KEY', '')
+BREVO_SENDER = os.environ.get('BREVO_SENDER', '')
+BREVO_SENDER_NAME = os.environ.get('BREVO_SENDER_NAME', 'تسهيل')
+
+def _send_via_brevo(to, subject, text, html=None):
+    def _run():
+        try:
+            import requests
+            payload = {
+                'sender': {'name': BREVO_SENDER_NAME, 'email': BREVO_SENDER},
+                'to': [{'email': to}],
+                'subject': subject,
+                'textContent': text,
+            }
+            if html:
+                payload['htmlContent'] = html
+            resp = requests.post('https://api.brevo.com/v3/smtp/email',
+                                 json=payload, headers={'api-key': BREVO_API_KEY},
+                                 timeout=15)
+            print(f'Brevo send: {resp.status_code} {resp.text[:200]}')
+        except Exception as e:
+            print(f'Brevo error: {e}')
+    threading.Thread(target=_run, daemon=True).start()
+
 def send_email(to, subject, text, html=None):
+    if BREVO_API_KEY and BREVO_SENDER:
+        return _send_via_brevo(to, subject, text, html)
     if not (SMTP_USER and SMTP_PASSWORD):
         return
     def _run():
