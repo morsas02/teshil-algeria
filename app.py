@@ -1163,6 +1163,7 @@ def job_detail(job_id):
         similar = conn.execute('''
             SELECT j.*, e.company_name, u.avatar_url FROM jobs j
             JOIN employers e ON j.employer_id = e.id
+            JOIN users u ON e.user_id = u.id
             WHERE j.category IS NOT NULL AND j.category = %s AND j.id != %s AND j.status = 'approved'
             LIMIT 4
         ''', (job['category'], job_id)).fetchall()
