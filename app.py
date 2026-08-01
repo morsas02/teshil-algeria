@@ -100,7 +100,7 @@ def not_found(e):
 def internal_error(e):
     tb = traceback.format_exc()
     print(tb)
-    return render_template('500.html', tb=tb), 500
+    return render_template('500.html'), 500
 
 ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', 'admin@ta9eef.dz')
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123456')
@@ -680,13 +680,16 @@ def init_db():
             except Exception:
                 conn.rollback()
 
-    if not conn.execute('SELECT id FROM users WHERE email = %s', (ADMIN_EMAIL,)).fetchone():
+    admin = conn.execute('SELECT id, password FROM users WHERE email = %s', (ADMIN_EMAIL,)).fetchone()
+    if not admin:
         hashed = generate_password_hash(ADMIN_PASSWORD)
         conn.execute(
             "INSERT INTO users (full_name, email, password, user_type, is_verified, wallet_balance) VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT(email) DO NOTHING" if is_pg else
             'INSERT OR IGNORE INTO users (full_name, email, password, user_type, is_verified, wallet_balance) VALUES (%s, %s, %s, %s, %s, %s)',
             ('مدير المنصة', ADMIN_EMAIL, hashed, 'admin', 1, 999999)
         )
+    elif ADMIN_PASSWORD != 'admin123456' and check_password_hash(admin['password'], 'admin123456'):
+        conn.execute('UPDATE users SET password = %s WHERE id = %s', (generate_password_hash(ADMIN_PASSWORD), admin['id']))
 
     if not conn.execute('SELECT key FROM settings WHERE key = %s', ('job_price',)).fetchone():
         conn.execute(
@@ -1025,6 +1028,9 @@ def register():
         password = request.form['password']
         confirm_password = request.form.get('confirm_password', '')
         user_type = request.form['user_type']
+        if user_type not in ('worker', 'employer'):
+            flash('نوع الحساب غير صالح', 'danger')
+            return render_template('register.html')
 
         if password != confirm_password:
             flash('كلمة المرور غير متطابقة', 'danger')
@@ -1074,12 +1080,15 @@ def google_login():
         flash('تسجيل الدخول بواسطة Google غير متاح حالياً', 'warning')
         return redirect(url_for('login'))
     redirect_uri = f'{BASE_URL}/login/google/callback' if BASE_URL != 'http://localhost:8080' else url_for('google_callback', _external=True)
+    state = secrets.token_urlsafe(16)
+    session['oauth_state'] = state
     params = {
         'client_id': GOOGLE_CLIENT_ID,
         'redirect_uri': redirect_uri,
         'response_type': 'code',
         'scope': 'openid email profile',
         'access_type': 'online',
+        'state': state,
     }
     from urllib.parse import urlencode
     url = f'https://accounts.google.com/o/oauth2/auth?{urlencode(params)}'
@@ -1089,6 +1098,10 @@ def google_login():
 def google_callback():
     code = request.args.get('code')
     error = request.args.get('error')
+    if not request.args.get('state') or request.args.get('state') != session.get('oauth_state'):
+        flash('فشل التحقق من تسجيل الدخول، أعد المحاولة', 'danger')
+        return redirect(url_for('login'))
+    session.pop('oauth_state', None)
     if error or not code:
         flash('تم إلغاء تسجيل الدخول بواسطة Google', 'warning')
         return redirect(url_for('login'))
@@ -1146,11 +1159,14 @@ def facebook_login():
         flash('تسجيل الدخول بواسطة Facebook غير متاح حالياً', 'warning')
         return redirect(url_for('login'))
     redirect_uri = url_for('facebook_callback', _external=True)
+    state = secrets.token_urlsafe(16)
+    session['oauth_state'] = state
     params = {
         'client_id': FACEBOOK_APP_ID,
         'redirect_uri': redirect_uri,
         'response_type': 'code',
         'scope': 'email,public_profile',
+        'state': state,
     }
     from urllib.parse import urlencode
     url = f'https://www.facebook.com/v19.0/dialog/oauth?{urlencode(params)}'
@@ -1160,6 +1176,10 @@ def facebook_login():
 def facebook_callback():
     code = request.args.get('code')
     error = request.args.get('error')
+    if not request.args.get('state') or request.args.get('state') != session.get('oauth_state'):
+        flash('فشل التحقق من تسجيل الدخول، أعد المحاولة', 'danger')
+        return redirect(url_for('login'))
+    session.pop('oauth_state', None)
     if error or not code:
         flash('تم إلغاء تسجيل الدخول بواسطة Facebook', 'warning')
         return redirect(url_for('login'))
@@ -1440,7 +1460,12 @@ def jobs():
     experience = request.args.get('experience', '').strip()
     salary_min = request.args.get('salary_min', '').strip()
     sort = request.args.get('sort', 'newest').strip()
-    page = int(request.args.get('page', '1'))
+    try:
+        page = int(request.args.get('page', '1'))
+    except (ValueError, TypeError):
+        page = 1
+    if page < 1:
+        page = 1
     per_page = 12
 
     where = ''
@@ -1460,8 +1485,13 @@ def jobs():
         where += " AND j.experience_level = %s"
         params.append(experience)
     if salary_min:
-        where += " AND j.salary_max >= %s"
-        params.append(int(salary_min))
+        try:
+            salary_min_int = int(salary_min)
+        except (ValueError, TypeError):
+            salary_min_int = None
+        if salary_min_int is not None:
+            where += " AND j.salary_max >= %s"
+            params.append(salary_min_int)
 
     count_row = conn.execute(f'SELECT COUNT(*) as c {base_query}{where}', params).fetchone()
     total = count_row['c']
