@@ -240,11 +240,11 @@ class DB:
             from psycopg2.extras import RealDictCursor
             from psycopg2.pool import ThreadedConnectionPool
             if DB._pool is None:
-                DB._pool = ThreadedConnectionPool(1, 8, self._url, cursor_factory=RealDictCursor)
+                DB._pool = ThreadedConnectionPool(1, 4, self._url, cursor_factory=RealDictCursor)
             try:
                 self._conn = DB._pool.getconn()
             except Exception:
-                DB._pool = ThreadedConnectionPool(1, 8, self._url, cursor_factory=RealDictCursor)
+                DB._pool = ThreadedConnectionPool(1, 4, self._url, cursor_factory=RealDictCursor)
                 self._conn = DB._pool.getconn()
         else:
             self._conn = sqlite3.connect(DB_PATH, timeout=15)
@@ -905,7 +905,13 @@ def push_unsubscribe():
 def push_vapid_key():
     return jsonify({'key': VAPID_PUBLIC_KEY})
 
+_stats_cache = {'t': 0.0, 'data': None}
+
 def get_stats():
+    import time
+    now = time.time()
+    if _stats_cache['data'] is not None and now - _stats_cache['t'] < 60:
+        return _stats_cache['data']
     conn = get_db()
     stats = {
         'total_jobs': conn.execute('SELECT COUNT(*) as c FROM jobs').fetchone()['c'],
@@ -915,6 +921,8 @@ def get_stats():
         'pending_jobs': conn.execute("SELECT COUNT(*) as c FROM jobs WHERE status = 'pending'").fetchone()['c'],
     }
     conn.close()
+    _stats_cache['t'] = now
+    _stats_cache['data'] = stats
     return stats
 
 @app.before_request
