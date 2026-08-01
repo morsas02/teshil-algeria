@@ -1,6 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-<rect rx="60" width="512" height="512" fill="#155EEF"/>
-<path d="M96 170h320v180H96z" fill="#1D4ED8"/>
-<path d="M180 120h152v40H180z" fill="#1D4ED8"/>
-<path d="M250 360c40-40 70-90 70-140l70 70-30 30-40-40c-8 36-30 67-58 95z" fill="#84CC16"/>
+  <rect rx="60" width="512" height="512" fill="#155EEF"/>
+  <!-- handle -->
+  <rect x="246" y="98" width="133" height="184" rx="27" fill="none" stroke="#ffffff" stroke-width="26"/>
+  <!-- briefcase body -->
+  <rect x="123" y="168" width="266" height="205" rx="42" fill="#ffffff"/>
+  <!-- latch -->
+  <rect x="233" y="168" width="47" height="58" rx="15" fill="#155EEF"/>
+  <!-- seam -->
+  <line x1="133" y1="283" x2="379" y2="283" stroke="#dbeafe" stroke-width="10"/>
+  <!-- green leaf -->
+  <path d="M260 330 C300 290 330 240 330 190 L400 260 370 290 330 250 C322 286 300 317 272 345 Z" fill="#84CC16"/>
 </svg>
