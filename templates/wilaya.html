@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}وظائف في {{ wilaya_name }} - تسهيل{% endblock %}
+{% block meta_desc %}وظائف في {{ wilaya_name }} - فرص عمل وتوظيف في ولاية {{ wilaya_name }}. تقدّم للوظائف بسهولة عبر منصة تسهيل.{% endblock %}
+{% block og_title %}وظائف في {{ wilaya_name }} - تسهيل{% endblock %}
+{% block og_desc %}تصفح أحدث فرص العمل في ولاية {{ wilaya_name }} وتقدّم للوظائف بسهولة.{% endblock %}
+{% block tw_title %}وظائف في {{ wilaya_name }} - تسهيل{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="/">الرئيسية</a></li>
+                <li class="breadcrumb-item"><a href="/jobs">الوظائف</a></li>
+                <li class="breadcrumb-item active">وظائف في {{ wilaya_name }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="fw-bold mb-1"><i class="bi bi-geo-alt"></i> وظائف في {{ wilaya_name }}</h4>
+            <p class="text-muted mb-0">أحدث فرص العمل في ولاية {{ wilaya_name }} - {{ jobs|length }} وظيفة</p>
+        </div>
+        <a href="/jobs" class="btn btn-outline-primary">جميع الوظائف</a>
+    </div>
+
+    <div class="row">
+        {% for job in jobs %}
+        <div class="col-md-6 mb-4">
+            <div class="card job-card h-100">
+                {% if job.is_urgent %}<span class="badge bg-danger feature-badge">عاجل</span>{% endif %}
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <h5 class="fw-bold mb-1">{{ job.title }}</h5>
+                            <p class="company mb-1"><i class="bi bi-building"></i> {{ job.company_name }}</p>
+                            <div class="text-muted small mb-2">
+                                <i class="bi bi-geo-alt"></i> {{ job.wilaya }}
+                                {% if job.contract_type %}<span class="badge bg-light text-dark ms-1">{{ job.contract_type }}</span>{% endif %}
+                            </div>
+                        </div>
+                        <div class="text-start">
+                            {% if job.salary_min %}
+                            <span class="salary">{{ job.salary_min }}{% if job.salary_max %}-{{ job.salary_max }}{% endif %} دج</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <p class="card-text text-muted small">{{ job.description[:150] }}...</p>
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <div>
+                            {% if job.category %}<span class="badge badge-algeria">{{ job.category }}</span>{% endif %}
+                            <small class="text-muted me-2"><i class="bi bi-clock"></i> {{ job.created_at|date }}</small>
+                        </div>
+                        <a href="/jobs/{{ job.id }}" class="btn btn-sm btn-primary">التفاصيل</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="empty-state">
+                <i class="bi bi-search"></i>
+                <h4>لا توجد وظائف في {{ wilaya_name }} حالياً</h4>
+                <p class="text-muted">تصفح وظائف الولايات الأخرى</p>
+                <a href="/jobs" class="btn btn-primary">عرض كل الوظائف</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-body">
+            <h6 class="fw-bold mb-3"><i class="bi bi-map"></i> وظائف في الولايات الأخرى</h6>
+            <div class="d-flex flex-wrap gap-2">
+                {% for slug, name in wilaya_slugs.items() %}
+                <a href="/wilaya/{{ slug }}" class="btn btn-sm btn-outline-secondary">{{ name }}</a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -200,6 +200,24 @@ ALGERIAN_WILAYAS = [
     "عين قزام", "توقرت", "جانت", "المنيعة", "المغير"
 ]
 
+WILAYA_SLUGS = {
+    'adrar': 'أدرار', 'chlef': 'الشلف', 'laghouat': 'الأغواط', 'oum-el-bouaghi': 'أم البواقي',
+    'batna': 'باتنة', 'bejaia': 'بجاية', 'biskra': 'بسكرة', 'bechar': 'بشار',
+    'blida': 'البليدة', 'bouira': 'البويرة', 'tamanrasset': 'تمنراست', 'tebessa': 'تبسة',
+    'tlemcen': 'تلمسان', 'tiaret': 'تيارت', 'tizi-ouzou': 'تيزي وزو', 'alger': 'الجزائر',
+    'djelfa': 'الجلفة', 'jijel': 'جيجل', 'setif': 'سطيف', 'saida': 'سعيدة',
+    'skikda': 'سكيكدة', 'sidi-bel-abbes': 'سيدي بلعباس', 'annaba': 'عنابة', 'guelma': 'قالمة',
+    'constantine': 'قسنطينة', 'medea': 'المدية', 'mostaganem': 'مستغانم', 'msila': 'المسيلة',
+    'mascara': 'معسكر', 'oran': 'وهران', 'ouargla': 'ورقلة', 'illizi': 'إليزي',
+    'bordj-bou-arreridj': 'برج بوعريريج', 'boumerdes': 'بومرداس', 'el-tarf': 'الطارف', 'tindouf': 'تندوف',
+    'tissemsilt': 'تسمسيلت', 'el-oued': 'الوادي', 'khenchela': 'خنشلة',
+    'souk-ahras': 'سوق أهراس', 'tipaza': 'تيبازة', 'mila': 'ميلة', 'ain-defla': 'عين الدفلى',
+    'naama': 'النعامة', 'ain-temouchent': 'عين تموشنت', 'ghardaia': 'غرداية', 'relizane': 'غليزان',
+    'timimoun': 'تميمون', 'bordj-badji-mokhtar': 'برج باجي مختار', 'ouled-djellal': 'أولاد جلال',
+    'beni-abbes': 'بني عباس', 'in-salah': 'عين صالح', 'in-guezzam': 'عين قزام',
+    'touggourt': 'توقرت', 'djanet': 'جانت', 'el-meniaa': 'المنيعة', 'el-mghair': 'المغير',
+}
+
 JOB_CATEGORIES = [
     "تكنولوجيا المعلومات", "الهندسة", "المحاسبة والمالية", "التسويق والمبيعات",
     "الموارد البشرية", "الإدارة", "الصناعة", "البناء والأشغال", "السياحة والفندقة",
@@ -927,6 +945,7 @@ app.add_template_filter(dt_fmt, 'dt_fmt')
 def inject_globals():
     ctx = {
         'wilayas': ALGERIAN_WILAYAS,
+        'wilaya_slugs': WILAYA_SLUGS,
         'categories': JOB_CATEGORIES,
         'contract_types': CONTRACT_TYPES,
         'now': datetime.now(),
@@ -1457,6 +1476,32 @@ def jobs():
     return render_template('jobs.html', jobs=jobs, search=search, wilaya=wilaya,
                          category=category, contract=contract, experience=experience,
                          sort=sort, page=page, total_pages=total_pages)
+
+@app.route('/wilaya/<slug>')
+def wilaya_jobs(slug):
+    name = WILAYA_SLUGS.get(slug)
+    if not name:
+        abort(404)
+    conn = get_db()
+    jobs = conn.execute('''
+        SELECT j.*, e.company_name, u.avatar_url FROM jobs j
+        JOIN employers e ON j.employer_id = e.id
+        JOIN users u ON e.user_id = u.id
+        WHERE j.status = 'approved' AND j.wilaya = %s
+        ORDER BY j.created_at DESC
+    ''', (name,)).fetchall()
+    conn.close()
+    return render_template('wilaya.html', jobs=jobs, wilaya_name=name, wilaya_slug=slug)
+
+@app.route('/health')
+def health():
+    try:
+        conn = get_db()
+        conn.execute('SELECT 1').fetchone()
+        conn.close()
+        return jsonify({'status': 'ok'})
+    except Exception:
+        return jsonify({'status': 'error'}), 500
 
 @app.route('/_version')
 def version():
@@ -2989,6 +3034,13 @@ def sitemap_xml():
     <lastmod>{updated}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
+  </url>\n'''
+    for slug, name in WILAYA_SLUGS.items():
+        xml += f'''  <url>
+    <loc>{base}/wilaya/{slug}</loc>
+    <lastmod>{today}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>\n'''
     xml += '</urlset>'
     return xml, 200, {'Content-Type': 'application/xml'}
