@@ -1543,7 +1543,8 @@ def job_detail(job_id):
                 'SELECT user_id FROM employers WHERE id = %s',
                 (job['employer_id'],)
             ).fetchone()
-            if not owner_id or owner_id['user_id'] != session['user_id']:
+            uid = session.get('user_id')
+            if not owner_id or not uid or owner_id['user_id'] != uid:
                 flash('الوظيفة غير موجودة', 'danger')
                 return redirect(url_for('jobs'))
 

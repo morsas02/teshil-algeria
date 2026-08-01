@@ -57,6 +57,7 @@
                         </div>
                     </div>
 
+                    {% if session.user_id %}
                     <h5 class="fw-bold mt-4"><i class="bi bi-file-text"></i> وصف الوظيفة</h5>
                     <p class="text-muted">{{ job.description }}</p>
 
@@ -73,6 +74,15 @@
                     {% if job.benefits %}
                     <h5 class="fw-bold mt-4"><i class="bi bi-gift"></i> المميزات</h5>
                     <p class="text-muted">{{ job.benefits }}</p>
+                    {% endif %}
+                    {% else %}
+                    <div class="text-center py-4 mt-3">
+                        <div class="mb-3"><i class="bi bi-lock" style="font-size:2.5rem;color:var(--primary);"></i></div>
+                        <h5 class="fw-bold">سجّل الدخول لعرض تفاصيل الوظيفة كاملة</h5>
+                        <p class="text-muted">الوصف الكامل والمسؤوليات والمتطلبات والمميزات متاحة للمستخدمين المسجلين فقط.</p>
+                        <a href="/login" class="btn btn-primary btn-lg"><i class="bi bi-box-arrow-in-right"></i> سجل الدخول</a>
+                        <div class="mt-2"><small class="text-muted">ليس لديك حساب؟ <a href="/register" class="text-decoration-none">أنشئ حساباً مجانياً</a></small></div>
+                    </div>
                     {% endif %}
 
                     <div class="d-flex gap-2 flex-wrap mt-4 pt-3 border-top">
@@ -120,7 +130,7 @@
                             {% if job.company_sector %}<small class="text-muted d-block"><i class="bi bi-tag"></i> {{ job.company_sector }}</small>{% endif %}
                             {% if job.company_size %}<small class="text-muted d-block"><i class="bi bi-people"></i> {{ job.company_size }}</small>{% endif %}
                             {% if job.company_website %}<small><a href="{{ job.company_website }}" target="_blank" class="text-decoration-none"><i class="bi bi-globe"></i> {{ job.company_website }}</a></small>{% endif %}
-                            {% if job.company_description %}<p class="text-muted mt-2">{{ job.company_description[:300] }}</p>{% endif %}
+                            {% if session.user_id and job.company_description %}<p class="text-muted mt-2">{{ job.company_description[:300] }}</p>{% endif %}
                         </div>
                     </div>
                 </div>
