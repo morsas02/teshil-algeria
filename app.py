@@ -1397,7 +1397,6 @@ def upload_avatar():
     return redirect(url_for('profile'))
 
 @app.route('/jobs')
-@login_required
 def jobs():
     conn = get_db()
     base_query = '''
@@ -1466,7 +1465,6 @@ def version():
     return f'<pre>GIT: {sha}\nSESSION_PERMANENT: {app.config.get("SESSION_PERMANENT")}\nPERMANENT_LIFETIME: {app.config.get("PERMANENT_SESSION_LIFETIME")}</pre>'
 
 @app.route('/jobs/<int:job_id>')
-@login_required
 def job_detail(job_id):
     with get_db() as conn:
         job = conn.execute('''
@@ -1521,7 +1519,55 @@ def job_detail(job_id):
                 ).fetchone())
 
         conn.commit()
-    return render_template('job_detail.html', job=job, similar=similar, has_applied=has_applied, is_saved=is_saved)
+
+    employment_map = {
+        'دوام كامل': 'FULL_TIME', 'عقد دائم': 'FULL_TIME', 'full': 'FULL_TIME', 'full-time': 'FULL_TIME',
+        'دوام جزئي': 'PART_TIME', 'جزئي': 'PART_TIME', 'part': 'PART_TIME', 'part-time': 'PART_TIME',
+        'عقد': 'CONTRACTOR', 'contract': 'CONTRACTOR',
+        'مؤقت': 'TEMPORARY', 'temp': 'TEMPORARY',
+        'تدريب': 'INTERN', 'intern': 'INTERN',
+    }
+    ct = (job['contract_type'] or '').strip().lower()
+    employment_type = 'OTHER'
+    for key, val in employment_map.items():
+        if key in ct:
+            employment_type = val
+            break
+
+    job_jsonld = {
+        '@context': 'https://schema.org',
+        '@type': 'JobPosting',
+        'title': job['title'],
+        'description': (job['description'] or '')[:500],
+        'datePosted': job['created_at'].strftime('%Y-%m-%d') if hasattr(job['created_at'], 'strftime') else str(job['created_at'])[:10],
+        'employmentType': employment_type,
+        'hiringOrganization': {'@type': 'Organization', 'name': job['company_name']},
+        'jobLocation': {
+            '@type': 'Place',
+            'address': {
+                '@type': 'PostalAddress',
+                'addressLocality': job['city'] or job['wilaya'] or '',
+                'addressRegion': job['wilaya'] or '',
+                'addressCountry': 'DZ',
+            }
+        },
+        'url': request.url_root.rstrip('/') + url_for('job_detail', job_id=job['id']),
+    }
+    if job['salary_min'] or job['salary_max']:
+        job_jsonld['baseSalary'] = {
+            '@type': 'MonetaryAmount',
+            'currency': 'DZD',
+            'value': {
+                '@type': 'QuantitativeValue',
+                'minValue': job['salary_min'] or 0,
+                'maxValue': job['salary_max'] or job['salary_min'],
+                'unitText': 'MONTH',
+            }
+        }
+    if job['company_website']:
+        job_jsonld['hiringOrganization']['sameAs'] = job['company_website']
+
+    return render_template('job_detail.html', job=job, similar=similar, has_applied=has_applied, is_saved=is_saved, job_jsonld=job_jsonld)
 
 @app.route('/jobs/create', methods=['GET', 'POST'])
 @employer_required
@@ -2060,7 +2106,6 @@ def saved_jobs():
     return render_template('saved_jobs.html', jobs=jobs)
 
 @app.route('/workers')
-@login_required
 def workers():
     conn = get_db()
     workers = conn.execute('''
@@ -2921,6 +2966,7 @@ def sitemap_xml():
         ('/faq', 'monthly', '0.7'),
         ('/contact', 'monthly', '0.6'),
         ('/terms', 'monthly', '0.5'),
+        ('/privacy', 'monthly', '0.5'),
         ('/jobs', 'weekly', '0.9'),
         ('/workers', 'weekly', '0.7'),
     ]
@@ -2939,7 +2985,7 @@ def sitemap_xml():
     for job in jobs:
         updated = date_filter(job['updated_at']) if job['updated_at'] else today
         xml += f'''  <url>
-    <loc>{base}/job/{job['id']}</loc>
+    <loc>{base}/jobs/{job['id']}</loc>
     <lastmod>{updated}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>

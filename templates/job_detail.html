@@ -1,5 +1,15 @@
 {% extends "base.html" %}
 {% block title %}{{ job.title }}{% endblock %}
+{% block meta_desc %}{{ job.title }} في {{ job.wilaya }} - {{ job.company_name }}. وظائف في الجزائر، فرص عمل وتوظيف في كل الولايات.{% endblock %}
+{% block og_title %}{{ job.title }} - {{ job.company_name }}{% endblock %}
+{% block og_desc %}{{ job.title }} في {{ job.wilaya }}. انشر وتقدم للوظائف بسهولة عبر منصة تسهيل.{% endblock %}
+{% block tw_title %}{{ job.title }} - {{ job.company_name }}{% endblock %}
+{% block tw_desc %}{{ job.title }} في {{ job.wilaya }}. وظائف في الجزائر.{% endblock %}
+{% block jsonld %}
+<script type="application/ld+json">
+{{ job_jsonld | tojson }}
+</script>
+{% endblock %}
 {% block content %}
 <div class="page-header">
     <div class="container">
