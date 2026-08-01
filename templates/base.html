@@ -14,6 +14,7 @@
     <link rel="manifest" href="/manifest.webmanifest">
     <meta name="theme-color" content="#059669">
     <link rel="apple-touch-icon" href="/static/img/apple-touch-icon.png">
+    <link rel="icon" type="image/png" href="/static/img/favicon-64.png">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -104,6 +105,7 @@
         .top-bar a:hover { color: #fff; }
         .navbar-main { background: rgba(255,255,255,0.92) !important; backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%); border-bottom: 1px solid rgba(5,150,105,0.08); padding: 0; }
         .navbar-main .navbar-brand { padding: 10px 0; display: flex; align-items: center; gap: 10px; }
+        .navbar-main .brand-logo { border-radius: 8px; display: block; height: 42px; width: auto; }
         .navbar-main .brand-text { font-size: 1.4rem; font-weight: 800; background: linear-gradient(135deg, var(--primary), #34d399); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; background-size: 200% 200%; animation: shimmer 4s ease infinite; transition: all 0.3s; }
         .navbar-main .navbar-brand:hover .brand-text { transform: scale(1.05); }
         .navbar-main .brand-dot { display: inline-block; width: 8px; height: 8px; background: var(--primary); border-radius: 50%; margin: 0 2px; animation: pulse-glow 2s infinite; }
@@ -252,7 +254,7 @@
     <nav class="navbar navbar-expand-lg navbar-main sticky-top">
         <div class="container">
             <a class="navbar-brand" href="/">
-                <span class="brand-text">تسهيل<span class="brand-dot"></span></span>
+                <img src="/static/img/icon-192.png" alt="تسهيل" class="brand-logo" height="42">
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
                 <span class="navbar-toggler-icon"></span>
@@ -356,7 +358,8 @@
             <div class="row">
                 <div class="col-lg-4 mb-4">
                     <div class="d-flex align-items-center gap-2 mb-3">
-                        <span class="brand-text" style="font-size:1.2rem;color:#fff;">تسهيل<span class="brand-dot"></span></span>
+                        <img src="/static/img/icon-192.png" alt="تسهيل" class="brand-logo" style="height:36px;">
+                        <span class="fw-bold" style="font-size:1.2rem;color:#fff;">تسهيل</span>
                     </div>
                     <p style="font-size:0.88rem;line-height:1.7;">منصة التوظيف الرائدة في الجزائر. نربط بين الكفاءات وأرباب العمل بسهولة وشفافية.</p>
                     <div class="social mt-3">
