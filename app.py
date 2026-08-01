@@ -680,7 +680,9 @@ def init_db():
             except Exception:
                 conn.rollback()
 
-    admin = conn.execute('SELECT id, password FROM users WHERE email = %s', (ADMIN_EMAIL,)).fetchone()
+    admin = conn.execute('SELECT id, password FROM users WHERE user_type = %s ORDER BY id LIMIT 1', ('admin',)).fetchone()
+    if not admin:
+        admin = conn.execute('SELECT id, password FROM users WHERE email = %s', (ADMIN_EMAIL,)).fetchone()
     if not admin:
         hashed = generate_password_hash(ADMIN_PASSWORD)
         conn.execute(
