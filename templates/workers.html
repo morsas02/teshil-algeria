@@ -12,10 +12,10 @@
     <div class="row">
         {% for w in workers %}
         <div class="col-md-4 mb-4">
-            <div class="card h-100">
+            <div class="card h-100 stagger-card" style="animation-delay:{{ loop.index0 * 60 }}ms">
                 <div class="card-body text-center p-4">
                     {% if w.avatar_url %}
-                    <img src="{{ w.avatar_url }}" class="avatar-img mx-auto mb-3" alt="{{ w.full_name }}">
+                    <img src="{{ w.avatar_url }}" class="avatar-img mx-auto mb-3 skeleton-img" alt="{{ w.full_name }}">
                     {% else %}
                     <div class="avatar-md mx-auto mb-3">{{ w.full_name[0] }}</div>
                     {% endif %}

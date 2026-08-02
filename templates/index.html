@@ -79,7 +79,7 @@
     <div class="row">
         {% for job in urgent %}
         <div class="col-md-4 mb-3">
-            <div class="card job-card position-relative">
+            <div class="card job-card position-relative stagger-card" style="animation-delay:{{ loop.index0 * 50 }}ms">
                 <span class="badge bg-danger feature-badge">عاجل</span>
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start mb-2">
@@ -107,8 +107,8 @@
     <div class="row">
         {% for job in featured %}
         <div class="col-md-4 mb-4">
-            <div class="card job-card h-100">
-                {% if job.is_featured %}<span class="badge bg-warning text-dark feature-badge"><i class="bi bi-star-fill"></i> مميز</span>{% endif %}
+            <div class="card job-card h-100 stagger-card" style="animation-delay:{{ loop.index0 * 50 }}ms">
+                {% if job.is_featured %}<span class="badge bg-warning text-dark feature-badge feature-badge-glow"><i class="bi bi-star-fill"></i> مميز</span>{% endif %}
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-2">
                         <span class="badge badge-algeria">{{ job.contract_type }}</span>
@@ -145,7 +145,7 @@
         <div class="row">
             {% for job in recent %}
             <div class="col-md-4 mb-4">
-                <div class="card job-card h-100">
+                <div class="card job-card h-100 stagger-card" style="animation-delay:{{ loop.index0 * 50 }}ms">
                     <div class="card-body">
                         <div class="d-flex justify-content-between mb-2">
                             <span class="badge badge-algeria">{{ job.contract_type }}</span>
