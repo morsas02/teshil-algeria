@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="{{ 'ar' if session.get('lang','ar') == 'ar' else 'fr' }}" dir="{{ 'rtl' if session.get('lang','ar') == 'ar' else 'ltr' }}">
 <head>
+    <script>
+    (function(){var t;try{t=localStorage.getItem('ta9eef_theme')}catch(e){}if(!t)t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-bs-theme',t)})();
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="{% block meta_desc %}تسهيل - منصة التوظيف الجزائرية الأولى. ابحث عن وظائف في جميع ولايات الجزائر أو انشر فرص العمل بسهولة.{% endblock %}">
@@ -12,7 +15,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preload" href="/static/fonts/bootstrap-icons.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="manifest" href="/manifest.webmanifest?v=4">
-    <meta name="theme-color" content="#059669">
+    <meta name="theme-color" id="themeColorMeta" content="#059669">
     <link rel="apple-touch-icon" href="/static/img/apple-touch-icon.png?v=4">
     <link rel="icon" type="image/png" sizes="32x32" href="/static/img/favicon-32.png?v=4">
     <link rel="icon" type="image/png" sizes="16x16" href="/static/img/favicon-16.png?v=4">
@@ -232,6 +235,41 @@
         ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, var(--primary), #34d399); border-radius: 6px; border: 2px solid var(--gray-100); }
         ::-webkit-scrollbar-thumb:hover { background: var(--primary-dark); }
         html { scrollbar-width: thin; scrollbar-color: var(--primary) var(--gray-100); }
+        .theme-toggle { background: none; border: 1px solid var(--gray-200); color: var(--gray-600); width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1rem; transition: all .3s; }
+        .theme-toggle:hover { background: var(--primary-light); color: var(--primary); border-color: var(--primary); transform: scale(1.06); }
+        [data-theme="dark"] { color-scheme: dark; }
+        [data-theme="dark"] body { background: #0f172a; color: #e2e8f0; }
+        [data-theme="dark"] .navbar-main { background: rgba(15,23,42,0.92) !important; border-bottom: 1px solid rgba(148,163,184,0.12); }
+        [data-theme="dark"] .navbar-main .nav-link { color: #cbd5e1 !important; }
+        [data-theme="dark"] .navbar-main .nav-link:hover, [data-theme="dark"] .navbar-main .nav-link.active { color: #34d399 !important; }
+        [data-theme="dark"] .navbar-main .dropdown-menu { background: #1e293b; border: 1px solid #334155; }
+        [data-theme="dark"] .navbar-main .dropdown-item { color: #e2e8f0; }
+        [data-theme="dark"] .navbar-main .dropdown-item:hover { background: #334155; color: #fff; }
+        [data-theme="dark"] .theme-toggle { border-color: #334155; color: #cbd5e1; }
+        [data-theme="dark"] .theme-toggle:hover { background: #334155; color: #34d399; border-color: #34d399; }
+        [data-theme="dark"] .card, [data-theme="dark"] .stat-card, [data-theme="dark"] .feature-card { background: #1e293b; border: 1px solid #334155; }
+        [data-theme="dark"] .card:hover, [data-theme="dark"] .stat-card:hover, [data-theme="dark"] .feature-card:hover { box-shadow: 0 20px 25px rgba(0,0,0,.5); }
+        [data-theme="dark"] .card::before, [data-theme="dark"] .stat-card::before { background: linear-gradient(90deg, transparent, #34d399, transparent); }
+        [data-theme="dark"] .section-title { color: #f1f5f9; }
+        [data-theme="dark"] .section-title::after { background: linear-gradient(90deg, #34d399, #10b981); }
+        [data-theme="dark"] .page-header { background: rgba(15,23,42,0.95); border-bottom: 1px solid #334155; }
+        [data-theme="dark"] .install-banner, [data-theme="dark"] .push-prompt { background: #1e293b; border-color: #334155; }
+        [data-theme="dark"] .empty-state h4 { color: #cbd5e1; }
+        [data-theme="dark"] .empty-state i { color: #334155; }
+        [data-theme="dark"] .bg-white { background-color: #1e293b !important; }
+        [data-theme="dark"] .bg-light { background-color: #1e293b !important; }
+        [data-theme="dark"] .text-dark { color: #e2e8f0 !important; }
+        [data-theme="dark"] .badge-light { background-color: #334155 !important; color: #e2e8f0 !important; }
+        [data-theme="dark"] .skeleton-img { background: linear-gradient(90deg, #1e293b 25%, #334155 37%, #1e293b 63%); background-size: 200% 100%; }
+        [data-theme="dark"] .table { color: #e2e8f0; }
+        [data-theme="dark"] .avatar-sm, [data-theme="dark"] .avatar-md { background: linear-gradient(135deg, #14532d, #065f46); color: #6ee7b7; }
+        [data-theme="dark"] .form-control, [data-theme="dark"] .form-select { background-color: #0f172a; color: #e2e8f0; border-color: #334155; }
+        [data-theme="dark"] .form-control::placeholder { color: #64748b; }
+        [data-theme="dark"] .modal-content { background: #1e293b; color: #e2e8f0; }
+        [data-theme="dark"] .modal-header, [data-theme="dark"] .modal-footer { border-color: #334155; }
+        [data-theme="dark"] .breadcrumb-item.active { color: #94a3b8; }
+        [data-theme="dark"] .hero-section { background: linear-gradient(135deg, #022c22 0%, #065f46 50%, #059669 100%); }
+        [data-theme="dark"] .hero-section::after { background: #0f172a; }
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
         }
@@ -286,6 +324,9 @@
                     </li>
                 </ul>
                 <ul class="navbar-nav align-items-center gap-1">
+                    <li class="nav-item">
+                        <button type="button" class="theme-toggle" id="themeToggle" aria-label="تبديل الوضع المظلم"><i class="bi bi-moon-stars"></i></button>
+                    </li>
                     {% if session.user_id %}
                         {% if session.user_type == 'admin' %}
                             <li class="nav-item"><a class="nav-link" href="/admin"><i class="bi bi-speedometer2"></i> لوحة التحكم</a></li>
@@ -571,6 +612,25 @@
                 try { sessionStorage.setItem('ta9eef_push_dismissed','1'); } catch(e) {}
             });
         })();
+    </script>
+    <script>
+        function updateThemeIcon() {
+            var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+            var toggle = document.getElementById('themeToggle');
+            if (!toggle) return;
+            toggle.innerHTML = dark ? '<i class="bi bi-sun"></i>' : '<i class="bi bi-moon-stars"></i>';
+            var meta = document.getElementById('themeColorMeta');
+            if (meta) meta.setAttribute('content', dark ? '#0f172a' : '#059669');
+        }
+        var themeToggle = document.getElementById('themeToggle');
+        if (themeToggle) themeToggle.addEventListener('click', function () {
+            var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            document.documentElement.setAttribute('data-bs-theme', next);
+            try { localStorage.setItem('ta9eef_theme', next); } catch (e) {}
+            updateThemeIcon();
+        });
+        updateThemeIcon();
     </script>
 </body>
 </html>
