@@ -2219,6 +2219,7 @@ def notifications():
     return render_template('notifications.html', notifications=notifs)
 
 @app.route('/contact', methods=['GET', 'POST'])
+@limiter.limit("5 per minute")
 def contact():
     if request.method == 'POST':
         conn = get_db()
