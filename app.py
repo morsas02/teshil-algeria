@@ -2294,16 +2294,24 @@ def admin_dashboard():
 def admin_users():
     conn = get_db()
     user_type = request.args.get('type', '')
-    query = 'SELECT * FROM users'
+    status = request.args.get('status', 'active')
+    clauses = []
     params = []
     if user_type:
-        query += ' WHERE user_type = %s'
+        clauses.append('user_type = %s')
         params.append(user_type)
+    if status == 'inactive':
+        clauses.append('is_active = 0')
+    else:
+        clauses.append('(is_active IS NULL OR is_active = 1)')
+    query = 'SELECT * FROM users'
+    if clauses:
+        query += ' WHERE ' + ' AND '.join(clauses)
     query += ' ORDER BY created_at DESC'
 
     users = conn.execute(query, params).fetchall()
     conn.close()
-    return render_template('admin/users.html', users=users, user_type=user_type)
+    return render_template('admin/users.html', users=users, user_type=user_type, status=status)
 
 @app.route('/admin/users/<int:user_id>/toggle-verify', methods=['POST'])
 @admin_required
@@ -2316,18 +2324,36 @@ def admin_toggle_verify(user_id):
         conn.commit()
         notify(user_id, 'تم تحديث حسابك', 'تم توثيق حسابك بنجاح!' if new else 'تم إلغاء توثيق حسابك', 'info')
     conn.close()
-    return redirect(url_for('admin_users'))
+    return redirect(url_for('admin_users', status=request.args.get('status', 'active')))
 
 @app.route('/admin/users/<int:user_id>/delete', methods=['POST'])
 @admin_required
 def admin_delete_user(user_id):
+    if user_id == session.get('user_id'):
+        flash('لا يمكنك حذف حسابك', 'danger')
+        return redirect(url_for('admin_users'))
     conn = get_db()
+    target = conn.execute('SELECT user_type FROM users WHERE id = %s', (user_id,)).fetchone()
+    if target and target['user_type'] == 'admin':
+        conn.close()
+        flash('لا يمكنك حذف حساب مشرف', 'danger')
+        return redirect(url_for('admin_users'))
     conn.execute('DELETE FROM notifications WHERE user_id = %s', (user_id,))
     conn.execute('UPDATE users SET is_active = 0 WHERE id = %s', (user_id,))
     conn.commit()
     conn.close()
     flash('تم حذف المستخدم', 'success')
-    return redirect(url_for('admin_users'))
+    return redirect(url_for('admin_users', status=request.args.get('status', 'active')))
+
+@app.route('/admin/users/<int:user_id>/restore', methods=['POST'])
+@admin_required
+def admin_restore_user(user_id):
+    conn = get_db()
+    conn.execute('UPDATE users SET is_active = 1 WHERE id = %s', (user_id,))
+    conn.commit()
+    conn.close()
+    flash('تمت استعادة المستخدم', 'success')
+    return redirect(url_for('admin_users', status=request.args.get('status', 'active')))
 
 @app.route('/admin/jobs')
 @admin_required
