@@ -90,9 +90,9 @@
         .type-card input[type="radio"] { position: absolute; opacity: 0; pointer-events: none; }
         .employer-only { animation: authIn .4s cubic-bezier(.22,.61,.36,1) both; }
 
-        .auth-float { position: fixed; top: 18px; inset-inline-end: 18px; z-index: 6; display: flex; gap: 8px; }
-        .auth-float a, .auth-float button { display: flex; align-items: center; gap: 7px; padding: 8px 14px; border-radius: 12px; font-size: .84rem; font-weight: 700; text-decoration: none; background: rgba(255,255,255,.72); border: 1px solid rgba(5,150,105,.18); color: var(--gray-700); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 8px 20px rgba(2,44,34,.12); transition: all .3s; }
-        .auth-float a:hover, .auth-float button:hover { color: var(--primary); transform: translateY(-2px); box-shadow: 0 12px 26px rgba(5,150,105,.22); }
+        .auth-corner { position: absolute; top: 16px; inset-inline-end: 16px; z-index: 4; display: flex; gap: 8px; }
+        .auth-corner a, .auth-corner button { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 12px; font-size: .95rem; text-decoration: none; background: rgba(255,255,255,.72); border: 1px solid rgba(5,150,105,.18); color: var(--gray-700); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 8px 20px rgba(2,44,34,.12); transition: all .3s; cursor: pointer; }
+        .auth-corner a:hover, .auth-corner button:hover { color: var(--primary); transform: translateY(-2px); box-shadow: 0 12px 26px rgba(5,150,105,.24); }
 
         .stagger-item { animation: authIn .65s cubic-bezier(.22,.61,.36,1) both; }
         @keyframes authIn { from { opacity: 0; transform: translateY(24px) scale(.98); filter: blur(5px); } to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); } }
@@ -115,8 +115,8 @@
         [data-theme="dark"] .type-card { background: rgba(15,23,42,.5); color: #cbd5e1; border-color: rgba(148,163,184,.2); }
         [data-theme="dark"] .type-card.active { background: rgba(5,150,105,.16); border-color: #10b981; color: #34d399; }
         [data-theme="dark"] .auth-foot { color: #94a3b8; }
-        [data-theme="dark"] .auth-float a, [data-theme="dark"] .auth-float button { background: rgba(15,23,42,.7); color: #cbd5e1; border-color: rgba(148,163,184,.2); }
-        [data-theme="dark"] .auth-float a:hover, [data-theme="dark"] .auth-float button:hover { color: #34d399; }
+        [data-theme="dark"] .auth-corner a, [data-theme="dark"] .auth-corner button { background: rgba(15,23,42,.7); color: #cbd5e1; border-color: rgba(148,163,184,.2); }
+        [data-theme="dark"] .auth-corner a:hover, [data-theme="dark"] .auth-corner button:hover { color: #34d399; }
         [data-theme="dark"] .auth-divider { color: #64748b; }
 
         @media (max-width: 991.98px) {
