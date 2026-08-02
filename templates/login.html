@@ -1,45 +1,50 @@
 {% extends "base.html" %}
 {% block title %}تسجيل دخول{% endblock %}
 {% block content %}
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-md-5">
-            <div class="card">
-                <div class="card-body p-5">
-                    <div class="text-center mb-4">
-                        <i class="bi bi-box-arrow-in-right display-4 text-primary"></i>
-                        <h4 class="fw-bold mt-2">تسجيل دخول</h4>
-                        <p class="text-muted">مرحباً بعودتك!</p>
-                    </div>
-                    <form method="POST">
-                        <div class="mb-3">
-                            <label class="form-label">البريد الإلكتروني</label>
-                            <input type="email" name="email" class="form-control form-control-lg" required placeholder="your@email.com">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">كلمة المرور</label>
-                            <input type="password" name="password" class="form-control form-control-lg" required>
-                        </div>
-                        <div class="text-start mb-3">
-                            <a href="/forgot-password" class="text-decoration-none small">نسيت كلمة المرور؟</a>
-                        </div>
-                        <button type="submit" class="btn btn-primary btn-lg w-100">دخول <i class="bi bi-arrow-left"></i></button>
-                    </form>
-                    <div class="text-center mt-4">
-                        <small class="text-muted">ليس لديك حساب؟ <a href="/register" class="fw-bold">تسجيل جديد</a></small>
-                    </div>
-                    <hr class="my-4">
-                    <div class="d-flex gap-2">
-                        <a href="/login/google" class="btn btn-outline-dark w-100 d-flex align-items-center justify-content-center gap-2">
-                            <i class="bi bi-google"></i> Google
-                        </a>
-                        <a href="/login/facebook" class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center gap-2">
-                            <i class="bi bi-facebook"></i> Facebook
-                        </a>
-                    </div>
+{% include "partials/auth_style.html" %}
+<div class="auth-page">
+    <div class="auth-layout">
+        {% include "partials/auth_visual.html" %}
+        <div class="auth-form-side">
+            <div class="auth-panel">
+                <div class="auth-head">
+                    <div class="auth-icon"><i class="bi bi-box-arrow-in-right"></i></div>
+                    <h3>مرحباً بعودتك <span>👋</span></h3>
+                    <p>سجّل دخولك لمتابعة بحثك أو إدارتك</p>
                 </div>
+                <form method="POST" autocomplete="on">
+                    <div class="auth-field">
+                        <label class="form-label">البريد الإلكتروني</label>
+                        <div class="input-wrap">
+                            <i class="bi bi-envelope"></i>
+                            <input type="email" name="email" required placeholder="your@email.com" autocomplete="email">
+                        </div>
+                    </div>
+                    <div class="auth-field">
+                        <label class="form-label">كلمة المرور</label>
+                        <div class="input-wrap">
+                            <i class="bi bi-lock"></i>
+                            <input type="password" name="password" required placeholder="••••••••" autocomplete="current-password" id="loginPw">
+                            <button type="button" class="eye-toggle" data-toggle-pw="#loginPw"><i class="bi bi-eye"></i></button>
+                        </div>
+                    </div>
+                    <div class="auth-links">
+                        <span></span>
+                        <a href="/forgot-password">نسيت كلمة المرور؟</a>
+                    </div>
+                    <button type="submit" class="auth-submit">دخول <i class="bi bi-arrow-left"></i></button>
+                </form>
+                <div class="auth-divider">أو تابع عبر</div>
+                <div class="social-row">
+                    <a href="/login/google" class="social-btn social-google"><i class="bi bi-google"></i> Google</a>
+                    <a href="/login/facebook" class="social-btn social-facebook"><i class="bi bi-facebook"></i> Facebook</a>
+                </div>
+                <div class="auth-foot">ليس لديك حساب؟ <a href="/register">أنشئ حساباً الآن</a></div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+{% block scripts %}
+{% include "partials/auth_script.html" %}
 {% endblock %}

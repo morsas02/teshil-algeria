@@ -1,0 +1,59 @@
+<script>
+    (function () {
+        var panel = document.querySelector('.auth-panel');
+        if (panel) {
+            var fields = panel.querySelectorAll('.auth-field, .auth-submit, .auth-divider, .social-row, .type-cards, .auth-foot');
+            fields.forEach(function (el, i) {
+                if (!el.classList.contains('stagger-item')) el.classList.add('stagger-item', 'stagger-' + Math.min(i + 1, 8));
+            });
+        }
+        var visual = document.querySelector('.auth-visual');
+        if (visual && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            visual.addEventListener('mousemove', function (e) {
+                var r = visual.getBoundingClientRect();
+                var dx = (e.clientX - (r.left + r.width / 2)) / r.width;
+                var dy = (e.clientY - (r.top + r.height / 2)) / r.height;
+                visual.querySelectorAll('.chip-host').forEach(function (c) {
+                    var d = parseFloat(c.dataset.depth || 18);
+                    c.style.transform = 'translate(' + (dx * d) + 'px,' + (dy * d) + 'px)';
+                });
+            });
+            visual.addEventListener('mouseleave', function () {
+                visual.querySelectorAll('.chip-host').forEach(function (c) { c.style.transform = ''; });
+            });
+        }
+        document.querySelectorAll('.eye-toggle').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var input = document.querySelector(btn.dataset.togglePw);
+                if (!input) return;
+                var show = input.type === 'password';
+                input.type = show ? 'text' : 'password';
+                btn.innerHTML = show ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>';
+            });
+        });
+        var typeCards = document.querySelectorAll('.type-card');
+        if (typeCards.length) {
+            typeCards.forEach(function (card) {
+                card.addEventListener('click', function () {
+                    typeCards.forEach(function (c) { c.classList.remove('active'); });
+                    card.classList.add('active');
+                    var radio = card.querySelector('input[type="radio"]');
+                    if (radio) radio.checked = true;
+                    var emp = document.querySelector('.employer-only');
+                    if (emp) emp.style.display = radio.value === 'employer' ? 'block' : 'none';
+                });
+            });
+        }
+        var themeBtn = document.getElementById('authTheme');
+        if (themeBtn) themeBtn.addEventListener('click', function () {
+            var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            document.documentElement.setAttribute('data-bs-theme', next);
+            try { localStorage.setItem('ta9eef_theme', next); } catch (e) {}
+            themeBtn.innerHTML = next === 'dark' ? '<i class="bi bi-sun"></i>' : '<i class="bi bi-moon-stars"></i>';
+        });
+        if (themeBtn && document.documentElement.getAttribute('data-theme') === 'dark') {
+            themeBtn.innerHTML = '<i class="bi bi-sun"></i>';
+        }
+    })();
+</script>
