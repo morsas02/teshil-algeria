@@ -30,7 +30,7 @@
                         </div>
                     </td>
                     <td>{{ o.duration_days }} يوم</td>
-                    <td>{{ o.price }} دج</td>
+                    <td>{{ o.price|num }} دج</td>
                     <td>
                         {% if o.status == 'pending_payment' %}
                         <span class="badge bg-warning text-dark">بانتظار الدفع</span>

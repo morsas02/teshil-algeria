@@ -1,5 +1,5 @@
-const CACHE_NAME = 'ta9eef-pwa-v3';
-const STATIC_CACHE = 'ta9eef-static-v3';
+const CACHE_NAME = 'ta9eef-pwa-v6';
+const STATIC_CACHE = 'ta9eef-static-v6';
 
 const CORE_ASSETS = [
   '/',

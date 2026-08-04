@@ -23,7 +23,7 @@
                     </div>
                     <p class="text-muted small mt-2 mb-0">
                         <i class="bi bi-geo-alt"></i> {{ app.wilaya }} | {{ app.contract_type }}
-                        {% if app.salary_min %} | <span class="salary">{{ app.salary_min }}-{{ app.salary_max }} دج</span>{% endif %}
+                        {% if app.salary_min %} | <span class="salary">{{ app.salary_min|num }}-{{ app.salary_max|num }} دج</span>{% endif %}
                     </p>
                     {% if app.cover_letter %}
                     <p class="text-muted small mt-1"><em>"{{ app.cover_letter[:100] }}..."</em></p>

@@ -1,0 +1,259 @@
+<!doctype html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>تسهيل — فيديو ترويجي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #052e22; font-family: 'Cairo', sans-serif; }
+
+  /* ---- orientation type scale ---- */
+  body { --sw: 1080px; --sh: 1920px;
+         --fs-hero: 118px; --fs-title: 74px; --fs-sub: 42px;
+         --fs-body: 38px; --fs-small: 30px; --fs-badge: 28px;
+         --pad: 74px; --card-pad: 30px 34px; --gap: 34px; --radius: 26px; }
+  body.h { --sw: 1920px; --sh: 1080px;
+         --fs-hero: 84px; --fs-title: 54px; --fs-sub: 30px;
+         --fs-body: 27px; --fs-small: 21px; --fs-badge: 20px;
+         --pad: 64px; --card-pad: 22px 26px; --gap: 22px; --radius: 18px; }
+
+  #stage {
+    position: fixed; top: 50%; left: 50%;
+    width: var(--sw); height: var(--sh);
+    transform: translate(-50%, -50%) scale(1);
+    overflow: hidden;
+    background:
+      radial-gradient(120% 90% at 85% -10%, rgba(16,185,129,0.55), transparent 55%),
+      radial-gradient(120% 90% at 5% 110%, rgba(245,158,11,0.35), transparent 55%),
+      linear-gradient(160deg, #043c2b 0%, #06382a 45%, #031f17 100%);
+  }
+
+  /* decorative floating shapes */
+  .deco { position: absolute; border-radius: 50%; opacity: 0.5; filter: blur(2px); }
+  .d1 { width: 340px; height: 340px; background: radial-gradient(circle, rgba(52,211,153,0.5), transparent 70%); top: 8%; left: -120px; animation: drift 9s ease-in-out infinite; }
+  .d2 { width: 260px; height: 260px; background: radial-gradient(circle, rgba(245,158,11,0.4), transparent 70%); bottom: 10%; right: -80px; animation: drift 11s ease-in-out infinite reverse; }
+  .d3 { width: 120px; height: 120px; border: 3px solid rgba(52,211,153,0.35); top: 40%; left: 12%; animation: drift 7s ease-in-out infinite; }
+  @keyframes drift { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(30px,-30px) scale(1.08); } }
+
+  .scene { position: absolute; inset: 0; display: none; flex-direction: column;
+           align-items: center; justify-content: center; text-align: center;
+           padding: var(--pad); color: #f8fafc; }
+  .scene.on { display: flex; }
+
+  /* ---- generic entrance animations (run when scene is on) ---- */
+  .scene .el { opacity: 0; }
+  .scene.on .el { animation: fadeUp 0.7s cubic-bezier(0.2,0.8,0.2,1) forwards; }
+  .scene.on .el.pop { animation: pop 0.6s cubic-bezier(0.2,0.8,0.2,1) forwards; }
+  .scene.on .el.zoom { animation: zoomIn 0.8s cubic-bezier(0.2,0.8,0.2,1) forwards; }
+  .scene.on .el.d1 { animation-delay: 0.05s; }
+  .scene.on .el.d2 { animation-delay: 0.15s; }
+  .scene.on .el.d3 { animation-delay: 0.25s; }
+  .scene.on .el.d4 { animation-delay: 0.35s; }
+  .scene.on .el.d5 { animation-delay: 0.45s; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(34px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes pop { from { opacity: 0; transform: scale(0.7); } to { opacity: 1; transform: scale(1); } }
+  @keyframes zoomIn { from { opacity: 0; transform: scale(1.3); } to { opacity: 1; transform: scale(1); } }
+  @keyframes floatY { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
+
+  .brand { display: inline-flex; align-items: center; gap: 18px; }
+  .logo {
+    width: 150px; height: 150px; border-radius: 34px; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 18px 50px rgba(16,185,129,0.45);
+    font-size: 92px; font-weight: 900; color: #fff; animation: floatY 4s ease-in-out infinite;
+  }
+  body.h .logo { width: 110px; height: 110px; border-radius: 26px; font-size: 68px; }
+
+  .site { display: inline-block; padding: 12px 30px; border-radius: 999px; font-weight: 700;
+          background: rgba(255,255,255,0.12); border: 2px solid rgba(255,255,255,0.25);
+          color: #d1fae5; font-size: var(--fs-small); direction: ltr; letter-spacing: 0.5px; }
+
+  .icon-wrap { display: flex; align-items: center; justify-content: center;
+               width: 150px; height: 150px; border-radius: 40px; margin-bottom: 26px;
+               background: linear-gradient(135deg, #10b981, #047857);
+               box-shadow: 0 16px 44px rgba(16,185,129,0.4); }
+  body.h .icon-wrap { width: 110px; height: 110px; border-radius: 28px; }
+  .icon-wrap svg { width: 78px; height: 78px; stroke: #fff; }
+  body.h .icon-wrap svg { width: 58px; height: 58px; }
+
+  h1 { font-size: var(--fs-hero); font-weight: 900; line-height: 1.15; margin-bottom: 8px; }
+  h2 { font-size: var(--fs-title); font-weight: 800; line-height: 1.25; margin-bottom: 14px; }
+  .sub { font-size: var(--fs-sub); font-weight: 600; color: #a7f3d0; }
+  .tagline { font-size: var(--fs-sub); font-weight: 700; color: #fcd34d; }
+
+  .badge-line { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; margin-top: 26px; }
+  body.h .badge-line { gap: 12px; }
+  .chip { display: inline-flex; align-items: center; gap: 10px; padding: 12px 22px; border-radius: 999px;
+          background: rgba(255,255,255,0.10); border: 1.5px solid rgba(255,255,255,0.2); font-size: var(--fs-small); font-weight: 700; }
+  .chip svg { width: 24px; height: 24px; stroke: #6ee7b7; }
+  body.h .chip svg { width: 19px; height: 19px; }
+
+  .features { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap); width: 100%; max-width: 880px; }
+  body.h .features { max-width: 1200px; grid-template-columns: repeat(4, 1fr); }
+  .feat { background: rgba(255,255,255,0.08); border: 1.5px solid rgba(255,255,255,0.16);
+          border-radius: var(--radius); padding: var(--card-pad); display: flex; flex-direction: column;
+          align-items: center; gap: 12px; }
+  .feat svg { width: 56px; height: 56px; stroke: #fcd34d; }
+  body.h .feat svg { width: 44px; height: 44px; }
+  .feat span { font-size: var(--fs-body); font-weight: 700; }
+
+  .cta-btn { display: inline-flex; align-items: center; gap: 14px; margin-top: 34px;
+             padding: 24px 64px; border-radius: 999px; font-size: var(--fs-title); font-weight: 800; color: #043c2b;
+             background: linear-gradient(135deg, #34d399, #fcd34d);
+             box-shadow: 0 18px 55px rgba(245,158,11,0.45); animation: floatY 3.4s ease-in-out infinite; }
+  body.h .cta-btn { padding: 18px 48px; }
+
+  .progress { position: absolute; top: 0; left: 0; height: 10px; width: 0%;
+              background: linear-gradient(90deg, #34d399, #fcd34d); z-index: 20; }
+
+  /* ---- UI chrome (not recorded when capturing the stage region) ---- */
+  .ui { position: fixed; top: 14px; left: 14px; z-index: 50; display: flex; gap: 8px; align-items: center; }
+  .ui button, .ui a { background: rgba(0,0,0,0.55); color: #fff; border: 1px solid rgba(255,255,255,0.25);
+                      padding: 8px 14px; border-radius: 10px; font-family: 'Cairo', sans-serif; font-size: 13px; cursor: pointer; text-decoration: none; }
+  .ui button.active { background: #059669; border-color: #34d399; }
+  .hint { position: fixed; bottom: 14px; left: 14px; z-index: 50; background: rgba(0,0,0,0.55);
+          color: #cbd5e1; padding: 8px 14px; border-radius: 10px; font-family: 'Cairo', sans-serif; font-size: 12px; }
+</style>
+</head>
+<body class="v">
+  <div id="stage">
+    <div class="deco d1"></div>
+    <div class="deco d2"></div>
+    <div class="deco d3"></div>
+    <div class="progress" id="progress"></div>
+
+    <!-- INTRO -->
+    <section class="scene" id="intro">
+      <div class="logo el zoom" style="margin-bottom:34px;">ت</div>
+      <h1 class="el">تسهيل</h1>
+      <div class="tagline el d1">منصة التوظيف الجزائرية</div>
+      <div class="badge-line">
+        <span class="chip el d2"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> للباحثين عن عمل</span>
+        <span class="chip el d3"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4"/></svg> لأرباب العمل</span>
+      </div>
+    </section>
+
+    <!-- SCENE 1 : workers -->
+    <section class="scene" id="s1">
+      <div class="icon-wrap el pop"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></div>
+      <h2 class="el d1">وظيفتك تبدأ هنا</h2>
+      <div class="badge-line">
+        <span class="chip el d2"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> ارفع سيرتك الذاتية PDF</span>
+        <span class="chip el d3"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> قدّم بضغطة واحدة</span>
+        <span class="chip el d4"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> تابع حالة طلباتك</span>
+      </div>
+    </section>
+
+    <!-- SCENE 2 : employers -->
+    <section class="scene" id="s2">
+      <div class="icon-wrap el pop"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01M12 6h.01M16 6h.01M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01"/></svg></div>
+      <h2 class="el d1">وظّف أفضل الكفاءات</h2>
+      <div class="badge-line">
+        <span class="chip el d2"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> انشر وظيفتك في دقائق</span>
+        <span class="chip el d3"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg> استقبل الطلبات والسير الذاتية</span>
+        <span class="chip el d4"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg> ادفع بسهولة بالدينار الجزائري</span>
+      </div>
+    </section>
+
+    <!-- SCENE 3 : features -->
+    <section class="scene" id="s3">
+      <h2 class="el d1">مميزات تجعل التوظيف أسهل</h2>
+      <div class="features" style="margin-top:40px;">
+        <div class="feat el d2"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg><span>محفظة إلكترونية</span></div>
+        <div class="feat el d3"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg><span>حسابات موثقة</span></div>
+        <div class="feat el d4"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Z"/><path d="M18 14h-8M15 18h-5M18 10h-8"/></svg><span>أخبار الوظائف</span></div>
+        <div class="feat el d5"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg><span>يعمل على الهاتف</span></div>
+      </div>
+    </section>
+
+    <!-- SCENE 4 : CTA -->
+    <section class="scene" id="cta">
+      <div class="logo el zoom" style="margin-bottom:30px;">ت</div>
+      <h1 class="el d1">انضم مجاناً الآن</h1>
+      <div class="sub el d2">مئات الفرص تنتظرك في الجزائر</div>
+      <div class="cta-btn el pop d3">ابدأ الآن</div>
+      <div style="margin-top:30px;" class="el d4"><span class="site">talented-respect-production.up.railway.app</span></div>
+    </section>
+
+    <!-- SCENE 5 : final -->
+    <section class="scene" id="final">
+      <div class="brand el zoom">
+        <div class="logo">ت</div>
+        <h1>تسهيل</h1>
+      </div>
+      <div class="tagline el d2" style="margin-top:8px;">وظيفتك تنتظرك</div>
+      <div style="margin-top:34px;" class="el d3"><span class="site">talented-respect-production.up.railway.app</span></div>
+    </section>
+  </div>
+
+  <div class="ui">
+    <button id="btnV" class="active" onclick="setMode('v')">عمودي 9:16</button>
+    <button id="btnH" onclick="setMode('h')">أفقي 16:9</button>
+    <button id="btnPlay" onclick="play()">↻ إعادة</button>
+  </div>
+  <div class="hint">سجّل الشاشة على المسرح الأخضر الداكن (المنطقة الكبيرة). اختصارات: V عمودي · H أفقي · مسافة إعادة</div>
+
+<script>
+  const stage = document.getElementById('stage');
+  const progress = document.getElementById('progress');
+  const scenes = ['intro','s1','s2','s3','cta','final'];
+  // timings (seconds) for each scene on/off
+  const TL = [
+    { id: 'intro', on: 0.2,  off: 2.6 },
+    { id: 's1',    on: 3.0,  off: 7.2 },
+    { id: 's2',    on: 7.6,  off: 11.8 },
+    { id: 's3',    on: 12.2, off: 16.4 },
+    { id: 'cta',   on: 16.8, off: 19.6 },
+    { id: 'final', on: 20.2, off: 24.0 }
+  ];
+  const TOTAL = 24.0;
+  let timer = null;
+
+  function fit() {
+    const isH = document.body.classList.contains('h');
+    const sw = isH ? 1920 : 1080;
+    const sh = isH ? 1080 : 1920;
+    const s = Math.min(window.innerWidth / sw, window.innerHeight / sh);
+    stage.style.width = sw + 'px';
+    stage.style.height = sh + 'px';
+    stage.style.transform = `translate(-50%, -50%) scale(${s})`;
+  }
+
+  function setMode(m) {
+    document.body.classList.toggle('h', m === 'h');
+    document.body.classList.toggle('v', m === 'v');
+    document.getElementById('btnV').classList.toggle('active', m === 'v');
+    document.getElementById('btnH').classList.toggle('active', m === 'h');
+    fit();
+  }
+
+  function play() {
+    if (timer) { TL.forEach(t => document.getElementById(t.id).classList.remove('on')); clearTimeout(timer); }
+    progress.style.transition = 'none';
+    progress.style.width = '0%';
+    void progress.offsetWidth;
+    progress.style.transition = `width ${TOTAL}s linear`;
+    progress.style.width = '100%';
+    TL.forEach(t => {
+      timer = setTimeout(() => document.getElementById(t.id).classList.add('on'), t.on * 1000);
+      timer = setTimeout(() => document.getElementById(t.id).classList.remove('on'), t.off * 1000);
+    });
+  }
+
+  window.addEventListener('resize', fit);
+  window.addEventListener('keydown', e => {
+    if (e.key === 'v' || e.key === 'V') setMode('v');
+    if (e.key === 'h' || e.key === 'H') setMode('h');
+    if (e.key === ' ') { e.preventDefault(); play(); }
+  });
+
+  // orientation from URL hash
+  if (location.hash === '#h') setMode('h');
+  fit();
+  play();
+</script>
+</body>
+</html>

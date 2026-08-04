@@ -39,7 +39,7 @@
                                 <span class="badge bg-secondary">غير موثق</span>
                                 {% endif %}
                             </td>
-                            <td>{{ u.wallet_balance or 0 }}</td>
+                            <td>{{ (u.wallet_balance or 0)|num }} دج</td>
                             <td><small>{{ u.created_at|date }}</small></td>
                             <td>
                                 {% if u.user_type == 'employer' %}
@@ -81,7 +81,7 @@
             <form method="POST" action="/admin/wallet/{{ u.id }}/adjust">
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">الرصيد الحالي: <strong>{{ u.wallet_balance or 0 }} دج</strong></label>
+                        <label class="form-label">الرصيد الحالي: <strong>{{ u.wallet_balance|num or 0 }} دج</strong></label>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">المبلغ (موجب للإضافة، سالب للخصم)</label>

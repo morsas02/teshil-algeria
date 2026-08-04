@@ -98,7 +98,7 @@
                                 <small class="fw-bold d-block">{{ o.title }}</small>
                             </td>
                             <td>{{ o.duration_days }} يوم</td>
-                            <td class="fw-bold">{{ o.price }} دج</td>
+                            <td class="fw-bold">{{ o.price|num }} دج</td>
                             <td>
                                 {% if o.receipt_path %}
                                 <a href="/static/receipts/{{ o.receipt_path }}" target="_blank" class="btn btn-sm btn-outline-secondary">

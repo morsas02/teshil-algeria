@@ -39,7 +39,7 @@
       </div>
       <div class="d-flex justify-content-between mb-1">
         <span class="text-muted">المبلغ</span>
-        <span class="fw-bold">{{ order.price }} دج</span>
+        <span class="fw-bold">{{ order.price|num }} دج</span>
       </div>
       <div class="d-flex justify-content-between mb-1">
         <span class="text-muted">الموضع</span>
@@ -74,7 +74,7 @@
       <strong><i class="bi bi-info-circle"></i> تعليمات الدفع:</strong>
       <ol class="mb-0 mt-2" style="font-size:0.9rem;line-height:1.8;">
         {% if settings.payment_ccp_rib %}
-        <li>حوّل المبلغ (<strong>{{ order.price }} دج</strong>) إلى حساب CCP: <strong dir="ltr">{{ settings.payment_ccp_rib }}</strong></li>
+        <li>حوّل المبلغ (<strong>{{ order.price|num }} دج</strong>) إلى حساب CCP: <strong dir="ltr">{{ settings.payment_ccp_rib }}</strong></li>
         {% endif %}
         {% if settings.payment_ccp_name %}
         <li>الاسم: <strong>{{ settings.payment_ccp_name }}</strong></li>

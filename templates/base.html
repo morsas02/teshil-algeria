@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ 'ar' if session.get('lang','ar') == 'ar' else 'fr' }}" dir="{{ 'rtl' if session.get('lang','ar') == 'ar' else 'ltr' }}">
+<html lang="ar" dir="rtl">
 <head>
     <script>
     (function(){var t;try{t=localStorage.getItem('ta9eef_theme')}catch(e){}if(!t)t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-bs-theme',t)})();
@@ -14,28 +14,25 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preload" href="/static/fonts/bootstrap-icons.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="manifest" href="/manifest.webmanifest?v=5">
+    <link rel="manifest" href="/manifest.webmanifest?v=8">
     <meta name="theme-color" id="themeColorMeta" content="#059669">
-    <link rel="apple-touch-icon" href="/static/img/apple-touch-icon.png?v=5">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/img/favicon-32.png?v=5">
-    <link rel="icon" type="image/png" sizes="16x16" href="/static/img/favicon-16.png?v=5">
+    <link rel="apple-touch-icon" href="/static/img/apple-touch-icon.png?v=8">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/img/favicon-32.png?v=8">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/img/favicon-16.png?v=8">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="تسهيل">
     <meta name="application-name" content="تسهيل">
-    {% set current_lang = session.get('lang', 'ar') %}
-    <link rel="alternate" hreflang="ar" href="{{ request.url_root.rstrip('/') }}{{ request.path }}?lang=ar">
-    <link rel="alternate" hreflang="fr" href="{{ request.url_root.rstrip('/') }}{{ request.path }}?lang=fr">
     <link rel="alternate" hreflang="x-default" href="{{ request.url_root.rstrip('/') }}{{ request.path }}">
     <meta property="og:title" content="{% block og_title %}تسهيل - منصة التوظيف الجزائرية{% endblock %}">
     <meta property="og:description" content="{% block og_desc %}منصة التوظيف الأولى في الجزائر. وظائف في جميع الولايات، لربط الباحثين عن العمل بأرباب العمل.{% endblock %}">
     <meta property="og:type" content="website">
     <meta property="og:url" content="{{ request.url.rstrip('?') if request.url else '' }}">
     <meta property="og:site_name" content="تسهيل">
-    <meta property="og:image" content="{{ request.url_root.rstrip('/') }}/static/img/icon-512.png?v=5">
+    <meta property="og:image" content="{{ request.url_root.rstrip('/') }}/static/img/icon-512.png?v=8">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:image" content="{{ request.url_root.rstrip('/') }}/static/img/icon-512.png?v=5">
+    <meta name="twitter:image" content="{{ request.url_root.rstrip('/') }}/static/img/icon-512.png?v=8">
     <meta name="twitter:title" content="{% block tw_title %}تسهيل - منصة التوظيف الجزائرية{% endblock %}">
     <meta name="twitter:description" content="{% block tw_desc %}منصة التوظيف الأولى في الجزائر. وظائف في جميع الولايات.{% endblock %}">
     <script type="application/ld+json">
@@ -47,16 +44,12 @@
         "url": "{{ request.url_root.rstrip('/') }}",
         "description": "منصة التوظيف الجزائرية الأولى",
         "areaServed": "DZ",
-        "availableLanguage": ["Arabic", "French"]
+        "availableLanguage": ["Arabic"]
     }
     </script>
     {% block jsonld %}{% endblock %}
     <title>تسهيل - {% block title %}منصة التوظيف{% endblock %}</title>
-    {% if current_lang == 'ar' %}
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
-    {% else %}
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    {% endif %}
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%231a7a3a'/><text x='16' y='22' font-family='Arial' font-size='16' font-weight='bold' fill='white' text-anchor='middle'>ت</text></svg>">
     <link rel="stylesheet" href="/static/css/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -111,9 +104,9 @@
         .navbar-main .navbar-brand { padding: 10px 0; display: flex; align-items: center; gap: 10px; }
         .navbar-main .brand-logo { border-radius: 8px; display: block; height: 42px; width: auto; }
         .navbar-main .brand-text { font-size: 1.5rem; font-weight: 800; background: linear-gradient(135deg, var(--primary), #34d399); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; background-size: 200% 200%; animation: shimmer 4s ease infinite; transition: all 0.3s; }
-        .navbar-main .brand-badge { width: 42px; height: 42px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 14px rgba(16, 122, 58, 0.45), 0 0 0 2px rgba(52, 211, 153, 0.25); transition: all 0.3s; flex-shrink: 0; }
+        .navbar-main .brand-badge { width: 42px; height: 42px; border-radius: 12px; overflow: hidden; box-shadow: none; transition: all 0.3s; flex-shrink: 0; }
         .navbar-main .brand-badge img { width: 100%; height: 100%; display: block; }
-        .navbar-main .navbar-brand:hover .brand-badge { transform: scale(1.08) rotate(-4deg); box-shadow: 0 6px 20px rgba(16, 122, 58, 0.6), 0 0 0 3px rgba(52, 211, 153, 0.4); }
+        .navbar-main .navbar-brand:hover .brand-badge { transform: scale(1.08) rotate(-4deg); box-shadow: none; }
         .navbar-main .navbar-brand:hover .brand-text { transform: scale(1.05); }
         .navbar-main .brand-dot { display: inline-block; width: 8px; height: 8px; background: var(--primary); border-radius: 50%; margin: 0 2px; animation: pulse-glow 2s infinite; }
         .navbar-main .nav-link { color: var(--gray-600) !important; font-weight: 600; padding: 18px 16px !important; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border-bottom: 2px solid transparent; font-size: 0.9rem; position: relative; }
@@ -188,8 +181,6 @@
         .install-banner .ib-text strong { display: block; font-size: 0.92rem; }
         .install-banner .ib-text small { color: var(--gray-500); font-size: 0.78rem; }
         .push-prompt { position: fixed; bottom: 96px; left: 24px; z-index: 9985; background: #fff; border-radius: 12px; box-shadow: 0 8px 28px rgba(0,0,0,0.15); padding: 14px 16px; width: 260px; border: 1px solid var(--gray-100); }
-        .lang-switch { display: inline-flex; align-items: center; gap: 4px; padding: 3px 12px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; background: rgba(255,255,255,0.1); color: var(--gray-400); border: 1px solid rgba(255,255,255,0.08); transition: all 0.3s; text-decoration: none; }
-        .lang-switch:hover { background: rgba(255,255,255,0.2); color: #fff; transform: scale(1.05); }
         .feature-card { background: #fff; border-radius: var(--radius); padding: 28px 20px; text-align: center; border: 1px solid var(--gray-100); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); position: relative; }
         .feature-card:hover { transform: translateY(-8px) scale(1.02); box-shadow: var(--shadow-xl); border-color: var(--primary); }
         .feature-card .icon-wrap { width: 56px; height: 56px; border-radius: 14px; background: linear-gradient(135deg, var(--primary-light), #d1fae5); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; transition: all 0.4s; }
@@ -237,6 +228,20 @@
         html { scrollbar-width: thin; scrollbar-color: var(--primary) var(--gray-100); }
         .theme-toggle { background: none; border: 1px solid var(--gray-200); color: var(--gray-600); width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1rem; transition: all .3s; }
         .theme-toggle:hover { background: var(--primary-light); color: var(--primary); border-color: var(--primary); transform: scale(1.06); }
+        .nav-icon-btn { background: none; border: 1px solid var(--gray-200); color: var(--gray-600); width: 38px; height: 38px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; font-size: 1rem; transition: all .3s; text-decoration: none; flex-shrink: 0; }
+        .nav-icon-btn:hover { background: var(--primary-light); color: var(--primary); border-color: var(--primary); transform: scale(1.06); }
+        .nav-icon-btn.logout { color: #dc2626; }
+        .nav-icon-btn.logout:hover { background: #fee2e2; color: #dc2626; border-color: #dc2626; }
+        .dropdown-menu .user-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px; margin-bottom: 6px; border-bottom: 1px solid var(--gray-100); }
+        .dropdown-menu .user-head .uh-name { font-weight: 700; font-size: .92rem; color: var(--gray-800); line-height: 1.3; }
+        .dropdown-menu .user-head .uh-role { font-size: .78rem; color: var(--gray-500); }
+        [data-theme="dark"] .nav-icon-btn { border-color: #334155; color: #cbd5e1; }
+        [data-theme="dark"] .nav-icon-btn:hover { background: #334155; color: #34d399; border-color: #34d399; }
+        [data-theme="dark"] .nav-icon-btn.logout { color: #f87171; }
+        [data-theme="dark"] .nav-icon-btn.logout:hover { background: #7f1d1d; color: #fca5a5; border-color: #f87171; }
+        [data-theme="dark"] .dropdown-menu .user-head { border-color: #334155; }
+        [data-theme="dark"] .dropdown-menu .user-head .uh-name { color: #f1f5f9; }
+        [data-theme="dark"] .dropdown-menu .user-head .uh-role { color: #94a3b8; }
         [data-theme="dark"] { color-scheme: dark; }
         [data-theme="dark"] body { background: #0f172a; color: #e2e8f0; }
         [data-theme="dark"] .navbar-main { background: rgba(15,23,42,0.92) !important; border-bottom: 1px solid rgba(148,163,184,0.12); }
@@ -270,13 +275,85 @@
         [data-theme="dark"] .breadcrumb-item.active { color: #94a3b8; }
         [data-theme="dark"] .hero-section { background: linear-gradient(135deg, #022c22 0%, #065f46 50%, #059669 100%); }
         [data-theme="dark"] .hero-section::after { background: #0f172a; }
+        body.app-mode{background:var(--gray-50)}
+        body.app-mode .top-bar, body.app-mode .navbar-main, body.app-mode .footer,
+        body.app-mode .wa-float, body.app-mode .back-to-top, body.app-mode .install-banner{display:none!important}
+        body.app-mode{padding-bottom:calc(80px + env(safe-area-inset-bottom))}
+        body.app-mode .flash-container{top:64px}
+        body.app-mode .push-prompt{bottom:calc(104px + env(safe-area-inset-bottom))}
+        body.app-mode .hero-section{padding-top:44px}
+        body.app-mode .app-hero{padding-top:48px}
+        body.app-mode .dl-btn{display:none!important}
+        .app-header{position:sticky;top:0;z-index:9990;background:rgba(255,255,255,.92);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid rgba(5,150,105,.10);padding-top:env(safe-area-inset-top)}
+        .app-header-inner{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;max-width:720px;margin:0 auto}
+        .app-header-brand{display:flex;align-items:center;gap:10px;text-decoration:none}
+        .app-header-logo{width:38px;height:38px;border-radius:11px}
+        .app-header-title{font-size:1.25rem;font-weight:800;background:linear-gradient(135deg,var(--primary),#34d399);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:var(--primary)}
+        .app-header-actions{display:flex;align-items:center;gap:8px}
+        .app-header-left{display:flex;align-items:center;gap:10px;min-width:0}
+        .app-back-btn{background:none;border:1px solid var(--gray-200);color:var(--gray-600);width:38px;height:38px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;font-size:1.1rem;transition:all .3s;flex-shrink:0;cursor:pointer}
+        .app-back-btn:hover{background:var(--primary-light);color:var(--primary);border-color:var(--primary)}
+        .app-back-btn:active{transform:scale(.92)}
+        .app-page-title{font-size:1rem;font-weight:800;color:var(--gray-800);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:52vw}
+        .app-icon-btn{position:relative;background:none;border:1px solid var(--gray-200);color:var(--gray-600);width:38px;height:38px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;font-size:1.05rem;text-decoration:none;transition:all .3s}
+        .app-icon-btn:hover{background:var(--primary-light);color:var(--primary);border-color:var(--primary)}
+        .app-badge{position:absolute;top:-4px;left:-4px;background:#dc2626;color:#fff;font-size:.6rem;font-weight:700;min-width:16px;height:16px;border-radius:999px;display:flex;align-items:center;justify-content:center;padding:0 4px}
+        .app-bottomnav{position:fixed;bottom:0;left:0;right:0;z-index:9992;display:flex;background:rgba(255,255,255,.96);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border-top:1px solid rgba(5,150,105,.12);padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -6px 24px rgba(5,150,105,.06)}
+        .app-update-bar{display:flex;align-items:center;gap:12px;padding:10px 16px;background:linear-gradient(135deg,#064e3b,#059669);color:#fff;font-size:.85rem;position:relative;z-index:9989}
+        .app-update-bar i{font-size:1.3rem;color:#a7f3d0;flex-shrink:0}
+        .app-update-text{display:flex;flex-direction:column;line-height:1.4;flex:1}
+        .app-update-text strong{font-weight:800}
+        .app-update-text span{opacity:.9;font-size:.78rem}
+        .app-update-btn{background:#fff;color:#065f46;font-weight:800;font-size:.85rem;padding:8px 18px;border-radius:999px;text-decoration:none;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.18);transition:transform .15s}
+        .app-update-btn:active{transform:scale(.94)}
+        [data-theme="dark"] body.app-mode .app-update-bar{background:linear-gradient(135deg,#064e3b,#047857)}
+        .app-nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:9px 4px 8px;background:none;border:none;color:var(--gray-500);font-size:.68rem;font-weight:600;text-decoration:none;cursor:pointer;transition:color .2s,transform .15s;font-family:inherit}
+        .app-nav-item i{font-size:1.25rem;line-height:1}
+        .app-nav-item:active{transform:scale(.92)}
+        .app-nav-item.active{color:var(--primary)}
+        .app-nav-item.active i{filter:drop-shadow(0 2px 6px rgba(5,150,105,.45))}
+        .app-drawer-backdrop{position:fixed;inset:0;z-index:9998;background:rgba(15,23,42,.55);opacity:0;pointer-events:none;transition:opacity .25s}
+        .app-drawer-backdrop.show{opacity:1;pointer-events:auto}
+        .app-drawer{position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#fff;border-radius:24px 24px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));transform:translateY(105%);transition:transform .32s cubic-bezier(.4,0,.2,1);max-height:80vh;overflow-y:auto;box-shadow:0 -12px 40px rgba(0,0,0,.18)}
+        .app-drawer.open{transform:translateY(0)}
+        .app-drawer .user-head{margin-bottom:8px}
+        .app-drawer-link{display:flex;align-items:center;gap:12px;padding:13px 12px;border-radius:12px;color:var(--gray-700);font-weight:600;font-size:.92rem;text-decoration:none;transition:background .15s,transform .15s}
+        .app-drawer-link i{font-size:1.1rem;color:var(--primary);width:24px;text-align:center}
+        .app-drawer-link:hover{background:var(--primary-light);color:var(--primary);transform:translateX(-3px)}
+        .app-drawer-divider{height:1px;background:var(--gray-100);margin:10px 4px}
+        .app-drawer-title{font-size:.72rem;font-weight:700;color:var(--gray-400);padding:4px 12px 2px;letter-spacing:.5px}
+        .app-drawer-danger{color:#dc2626}
+        .app-drawer-danger i{color:#dc2626}
+        .app-drawer-danger:hover{background:#fee2e2;color:#dc2626}
+        .app-drawer-cta{background:var(--primary-light);color:var(--primary)}
+        .app-drawer-cta i{color:var(--primary)}
+        .app-drawer-close{width:100%;margin-top:12px;padding:14px;border:1px solid var(--gray-200);background:#fff;border-radius:14px;font-weight:700;color:var(--gray-600);font-size:.95rem;cursor:pointer;transition:all .2s;font-family:inherit}
+        .app-drawer-close:hover{background:var(--gray-50)}
+        [data-theme="dark"] body.app-mode .app-header{background:rgba(15,23,42,.92);border-bottom-color:#334155}
+        [data-theme="dark"] body.app-mode .app-icon-btn{border-color:#334155;color:#cbd5e1}
+        [data-theme="dark"] body.app-mode .app-icon-btn:hover{background:#334155;color:#34d399;border-color:#34d399}
+        [data-theme="dark"] body.app-mode .app-back-btn{border-color:#334155;color:#cbd5e1}
+        [data-theme="dark"] body.app-mode .app-back-btn:hover{background:#334155;color:#34d399;border-color:#34d399}
+        [data-theme="dark"] body.app-mode .app-page-title{color:#f1f5f9}
+        [data-theme="dark"] body.app-mode .app-bottomnav{background:rgba(15,23,42,.96);border-top-color:#334155}
+        [data-theme="dark"] body.app-mode .app-nav-item{color:#94a3b8}
+        [data-theme="dark"] body.app-mode .app-nav-item.active{color:#34d399}
+        [data-theme="dark"] body.app-mode .app-drawer{background:#1e293b}
+        [data-theme="dark"] body.app-mode .app-drawer-link{color:#e2e8f0}
+        [data-theme="dark"] body.app-mode .app-drawer-link:hover{background:#334155;color:#fff}
+        [data-theme="dark"] body.app-mode .app-drawer-divider{background:#334155}
+        [data-theme="dark"] body.app-mode .app-drawer-title{color:#64748b}
+        [data-theme="dark"] body.app-mode .app-drawer-danger{color:#f87171}
+        [data-theme="dark"] body.app-mode .app-drawer-danger:hover{background:#7f1d1d;color:#fca5a5}
+        [data-theme="dark"] body.app-mode .app-drawer-close{border-color:#334155;background:#0f172a;color:#cbd5e1}
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
         }
     </style>
 </head>
-<body>
+<body{% if is_app %} class="app-mode"{% endif %}>
 <div class="page-progress" id="pageProgress"></div>
+    {% if not is_app %}
     <div class="top-bar">
         <div class="container d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center gap-2">
@@ -287,14 +364,6 @@
                 <a href="/about" class="small">عن المنصة</a>
                 <span class="opacity-30">|</span>
                 <a href="/contact" class="small">اتصل بنا</a>
-                <span class="opacity-30 mx-1">|</span>
-                <a href="?lang={% if session.get('lang','ar') == 'ar' %}fr{% else %}ar{% endif %}" class="lang-switch">
-                    {% if session.get('lang','ar') == 'ar' %}
-                        <i class="bi bi-translate"></i> FR
-                    {% else %}
-                        <i class="bi bi-translate"></i> AR
-                    {% endif %}
-                </a>
             </div>
         </div>
     </div>
@@ -302,7 +371,7 @@
     <nav class="navbar navbar-expand-lg navbar-main sticky-top">
         <div class="container">
             <a class="navbar-brand" href="/">
-                <span class="brand-badge"><img src="/static/img/icon-192.png?v=5" alt=""></span>
+                <span class="brand-badge"><img src="/static/img/icon-192.png?v=8" alt=""></span>
                 <span class="brand-text">تسهيل<span class="brand-dot"></span></span>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
@@ -332,12 +401,13 @@
                             <li class="nav-item"><a class="nav-link" href="/admin"><i class="bi bi-speedometer2"></i> لوحة التحكم</a></li>
                             <li class="nav-item"><a class="nav-link" href="/admin/requests"><i class="bi bi-inbox"></i> الطلبات</a></li>
                             <li class="nav-item"><a class="nav-link" href="/admin/ads"><i class="bi bi-badge-ad"></i> الإعلانات</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/admin/news"><i class="bi bi-newspaper"></i> الأخبار</a></li>
                         {% elif session.user_type == 'employer' %}
                             <li class="nav-item"><a class="nav-link" href="/jobs/create"><i class="bi bi-plus-circle text-primary"></i> نشر وظيفة</a></li>
                             <li class="nav-item"><a class="nav-link" href="/my-jobs"><i class="bi bi-list-task"></i> وظائفي</a></li>
                             <li class="nav-item"><a class="nav-link" href="/applications"><i class="bi bi-inbox"></i> الطلبات</a></li>
                             <li class="nav-item"><a class="nav-link" href="/employer/requests"><i class="bi bi-envelope-paper"></i> طلبات الموظفين</a></li>
-                            <li class="nav-item"><a class="nav-link" href="/employer/wallet"><i class="bi bi-wallet2"></i> المحفظة {% if wallet_balance is defined %}<span class="badge bg-success ms-1">{{ wallet_balance }}</span>{% endif %}</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/employer/wallet"><i class="bi bi-wallet2"></i> المحفظة {% if wallet_balance is defined %}<span class="badge bg-success ms-1">{{ wallet_balance|num }} دج</span>{% endif %}</a></li>
                         {% else %}
                             <li class="nav-item"><a class="nav-link" href="/my-applications"><i class="bi bi-send"></i> طلباتي</a></li>
                             <li class="nav-item"><a class="nav-link" href="/my-requests"><i class="bi bi-envelope-paper"></i> طلباتي</a></li>
@@ -356,26 +426,42 @@
                                 {% endif %}
                             </a>
                             <ul class="dropdown-menu dropdown-menu-start">
+                                <li>
+                                    <div class="user-head">
+                                        {% if session.avatar_url %}
+                                        <img src="{{ session.avatar_url }}" class="avatar-img-sm skeleton-img" style="width:38px;height:38px;" alt="">
+                                        {% else %}
+                                        <div class="avatar-sm" style="width:38px;height:38px;">{{ session.full_name[0] }}</div>
+                                        {% endif %}
+                                        <div>
+                                            <div class="uh-name">{{ session.full_name }}</div>
+                                            <div class="uh-role">{% if session.user_type == 'employer' %}صاحب عمل{% elif session.user_type == 'admin' %}مدير المنصة{% else %}باحث عن عمل{% endif %}</div>
+                                        </div>
+                                    </div>
+                                </li>
                                 {% if session.user_type == 'employer' and wallet_balance is defined %}
-                                <li><a class="dropdown-item" href="/employer/wallet"><i class="bi bi-wallet2"></i> المحفظة <span class="badge bg-success ms-auto" style="direction:ltr;">{{ wallet_balance }} دج</span></a></li>
+                                <li><a class="dropdown-item" href="/employer/wallet"><i class="bi bi-wallet2"></i> المحفظة <span class="badge bg-success ms-auto" style="direction:ltr;">{{ wallet_balance|num }} دج</span></a></li>
                                 {% endif %}
-                                <li><a class="dropdown-item" href="/profile"><i class="bi bi-person"></i> الملف الشخصي</a></li>
-                                <li><a class="dropdown-item" href="/my-ads"><i class="bi bi-megaphone"></i> إعلاناتي</a></li>
                                 <li><a class="dropdown-item d-flex align-items-center" href="/notifications">
                                     <i class="bi bi-bell {{ 'bell-shake' if unread_count and unread_count > 0 }}"></i> الإشعارات
                                     {% if unread_count and unread_count > 0 %}
                                         <span class="badge bg-danger rounded-pill ms-auto">{{ unread_count }}</span>
                                     {% endif %}
                                 </a></li>
+                                <li><a class="dropdown-item" href="/my-ads"><i class="bi bi-megaphone"></i> إعلاناتي</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 {% if session.user_type == 'worker' %}
                                 <li><a class="dropdown-item" href="/switch-role/employer"><i class="bi bi-briefcase"></i> التبديل إلى صاحب عمل</a></li>
                                 {% else %}
                                 <li><a class="dropdown-item" href="/switch-role/worker"><i class="bi bi-person-search"></i> التبديل إلى باحث عن عمل</a></li>
                                 {% endif %}
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item text-danger" href="/logout"><i class="bi bi-box-arrow-right"></i> تسجيل خروج</a></li>
                             </ul>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-icon-btn" href="/profile" title="الملف الشخصي" aria-label="الملف الشخصي"><i class="bi bi-person"></i></a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-icon-btn logout" href="/logout" title="تسجيل الخروج" aria-label="تسجيل الخروج"><i class="bi bi-box-arrow-right"></i></a>
                         </li>
                     {% else %}
                         <li class="nav-item"><a class="nav-link" href="/login">دخول</a></li>
@@ -385,6 +471,42 @@
             </div>
         </div>
     </nav>
+    {% endif %}
+
+    {% if is_app %}
+    <header class="app-header">
+        <div class="app-header-inner">
+            {% if request.path == '/' %}
+            <a class="app-header-brand" href="/">
+                <img class="app-header-logo" src="/static/img/icon-192.png?v=8" alt="تسهيل">
+                <span class="app-header-title">تسهيل</span>
+            </a>
+            {% else %}
+            <div class="app-header-left">
+                <button type="button" class="app-back-btn" id="appBackBtn" aria-label="رجوع"><i class="bi bi-arrow-right"></i></button>
+                <span class="app-page-title">{% block app_page_title %}{{ self.title() }}{% endblock %}</span>
+            </div>
+            {% endif %}
+            <div class="app-header-actions">
+                <button type="button" class="theme-toggle" id="themeToggle" aria-label="تبديل الوضع المظلم"><i class="bi bi-moon-stars"></i></button>
+                <a class="app-icon-btn" href="/notifications" aria-label="الإشعارات">
+                    <i class="bi bi-bell"></i>
+                    {% if unread_count and unread_count > 0 %}<span class="app-badge">{{ unread_count }}</span>{% endif %}
+                </a>
+            </div>
+        </div>
+    </header>
+    {% if app_update_available %}
+    <div class="app-update-bar" id="appUpdateBar">
+        <i class="bi bi-arrow-up-circle-fill"></i>
+        <div class="app-update-text">
+            <strong>نسخة جديدة متاحة</strong>
+            <span>الإصدار {{ app_version_name }} — حدّث الآن في ثوانٍ</span>
+        </div>
+        <a href="{{ app_apk_url }}" class="app-update-btn">تحديث</a>
+    </div>
+    {% endif %}
+    {% endif %}
 
     <div class="flash-container">
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -405,12 +527,13 @@
 
     {% block content %}{% endblock %}
 
+    {% if not is_app %}
     <footer class="footer">
         <div class="container">
             <div class="row">
                 <div class="col-lg-4 mb-4">
                     <div class="d-flex align-items-center gap-2 mb-3">
-                        <span class="brand-badge" style="width:34px;height:34px;border-radius:9px;box-shadow:none;display:inline-block;overflow:hidden;"><img src="/static/img/icon-192.png?v=5" alt="" style="width:100%;height:100%;display:block;"></span>
+                        <span class="brand-badge" style="width:34px;height:34px;border-radius:9px;box-shadow:none;display:inline-block;overflow:hidden;"><img src="/static/img/icon-192.png?v=8" alt="" style="width:100%;height:100%;display:block;"></span>
                         <span class="brand-text" style="font-size:1.2rem;color:#fff;-webkit-text-fill-color:#fff;background:none;">تسهيل<span class="brand-dot"></span></span>
                     </div>
                     <p style="font-size:0.88rem;line-height:1.7;">منصة التوظيف الرائدة في الجزائر. نربط بين الكفاءات وأرباب العمل بسهولة وشفافية.</p>
@@ -427,6 +550,7 @@
                         <li class="mb-2"><a href="/jobs">البحث عن وظيفة</a></li>
                         <li class="mb-2"><a href="/workers">البحث عن عمال</a></li>
                         <li class="mb-2"><a href="/register">إنشاء حساب</a></li>
+                        <li class="mb-2"><a href="/app"><i class="bi bi-phone"></i> تحميل تطبيق أندرويد</a></li>
                         <li class="mb-2"><a href="/about">عن المنصة</a></li>
                     </ul>
                 </div>
@@ -455,6 +579,7 @@
             </div>
         </div>
     </footer>
+    {% endif %}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
@@ -516,10 +641,11 @@
         });
     })();
     </script>
+    {% if not is_app %}
     <a class="wa-float" href="https://wa.me/213670729307?text=%D8%A7%D9%84%D8%B3%D9%84%D8%A7%D9%85%20%D8%B9%D9%84%D9%8A%D9%83%D9%85%D8%8C%20%D9%84%D8%AF%D9%8A%D9%8A%20%D8%B3%D8%A4%D8%A7%D9%84%20%D8%AD%D9%88%D9%84%20%D9%85%D9%86%D8%B5%D8%A9%20%D8%AA%D8%B3%D9%87%D9%8A%D9%84" target="_blank" rel="noopener" aria-label="تواصل عبر واتساب"><i class="bi bi-whatsapp"></i></a>
     <button class="back-to-top" id="backToTop" aria-label="العودة للأعلى"><i class="bi bi-arrow-up"></i></button>
     <div class="install-banner" id="installBanner">
-        <img src="/static/img/icon-192.png?v=5" alt="تسهيل">
+        <img src="/static/img/icon-192.png?v=8" alt="تسهيل">
         <div class="ib-text">
             <strong>ثبّت تطبيق تسهيل</strong>
             <small>افتحه مباشرة من شاشتك الرئيسية كتطبيق أصلي</small>
@@ -527,6 +653,7 @@
         <button class="btn btn-primary btn-sm" id="installBtn">تثبيت</button>
         <button class="btn btn-light btn-sm" id="installDismiss">لاحقاً</button>
     </div>
+    {% endif %}
     {% if session.user_id %}
     <div class="push-prompt" id="pushPrompt" style="display:none;">
         <div class="d-flex align-items-center gap-2 mb-2">
@@ -613,6 +740,90 @@
             });
         })();
     </script>
+    {% if is_app %}
+    <nav class="app-bottomnav" aria-label="التنقل الرئيسي">
+        <a href="/" class="app-nav-item{% if request.path == '/' %} active{% endif %}"><i class="bi bi-house-door"></i><span>الرئيسية</span></a>
+        <a href="/jobs" class="app-nav-item{% if request.path.startswith('/jobs') or request.path.startswith('/job/') %} active{% endif %}"><i class="bi bi-search"></i><span>الوظائف</span></a>
+        <a href="/workers" class="app-nav-item{% if request.path.startswith('/workers') %} active{% endif %}"><i class="bi bi-people"></i><span>العمال</span></a>
+        <a href="/advertise" class="app-nav-item{% if request.path.startswith('/advertise') %} active{% endif %}"><i class="bi bi-megaphone"></i><span>أعلن معنا</span></a>
+        <button type="button" class="app-nav-item" id="appMoreBtn"><i class="bi bi-grid"></i><span>المزيد</span></button>
+    </nav>
+
+    <div class="app-drawer-backdrop" id="appDrawerBackdrop"></div>
+    <div class="app-drawer" id="appDrawer" role="dialog" aria-label="القائمة">
+        {% if session.user_id %}
+        <div class="user-head">
+            {% if session.avatar_url %}
+            <img src="{{ session.avatar_url }}" class="avatar-img-sm skeleton-img" style="width:40px;height:40px;" alt="">
+            {% else %}
+            <div class="avatar-sm" style="width:40px;height:40px;">{{ session.full_name[0] }}</div>
+            {% endif %}
+            <div>
+                <div class="uh-name">{{ session.full_name }}</div>
+                <div class="uh-role">{% if session.user_type == 'employer' %}صاحب عمل{% elif session.user_type == 'admin' %}مدير المنصة{% else %}باحث عن عمل{% endif %}</div>
+            </div>
+        </div>
+        {% endif %}
+        {% if session.user_id %}
+            {% if session.user_type == 'admin' %}
+            <a class="app-drawer-link" href="/admin"><i class="bi bi-speedometer2"></i> لوحة التحكم</a>
+            <a class="app-drawer-link" href="/admin/requests"><i class="bi bi-inbox"></i> الطلبات</a>
+            <a class="app-drawer-link" href="/admin/ads"><i class="bi bi-badge-ad"></i> الإعلانات</a>
+            <a class="app-drawer-link" href="/admin/news"><i class="bi bi-newspaper"></i> الأخبار</a>
+            {% elif session.user_type == 'employer' %}
+            <a class="app-drawer-link" href="/jobs/create"><i class="bi bi-plus-circle text-primary"></i> نشر وظيفة</a>
+            <a class="app-drawer-link" href="/my-jobs"><i class="bi bi-list-task"></i> وظائفي</a>
+            <a class="app-drawer-link" href="/applications"><i class="bi bi-inbox"></i> الطلبات</a>
+            <a class="app-drawer-link" href="/employer/requests"><i class="bi bi-envelope-paper"></i> طلبات الموظفين</a>
+            <a class="app-drawer-link" href="/employer/wallet"><i class="bi bi-wallet2"></i> المحفظة</a>
+            {% else %}
+            <a class="app-drawer-link" href="/my-applications"><i class="bi bi-send"></i> طلباتي</a>
+            <a class="app-drawer-link" href="/my-requests"><i class="bi bi-envelope-paper"></i> طلباتي</a>
+            <a class="app-drawer-link" href="/saved-jobs"><i class="bi bi-bookmark"></i> المحفوظات</a>
+            {% endif %}
+            <a class="app-drawer-link" href="/my-ads"><i class="bi bi-megaphone"></i> إعلاناتي</a>
+            <a class="app-drawer-link" href="/notifications"><i class="bi bi-bell"></i> الإشعارات{% if unread_count and unread_count > 0 %} <span class="badge bg-danger rounded-pill ms-auto">{{ unread_count }}</span>{% endif %}</a>
+            <a class="app-drawer-link" href="/profile"><i class="bi bi-person"></i> الملف الشخصي</a>
+            {% if session.user_type == 'worker' %}
+            <a class="app-drawer-link" href="/switch-role/employer"><i class="bi bi-briefcase"></i> التبديل إلى صاحب عمل</a>
+            {% else %}
+            <a class="app-drawer-link" href="/switch-role/worker"><i class="bi bi-person-search"></i> التبديل إلى باحث عن عمل</a>
+            {% endif %}
+            <div class="app-drawer-divider"></div>
+            <a class="app-drawer-link app-drawer-danger" href="/logout"><i class="bi bi-box-arrow-right"></i> تسجيل الخروج</a>
+        {% else %}
+            <a class="app-drawer-link" href="/login"><i class="bi bi-box-arrow-in-right"></i> دخول</a>
+            <a class="app-drawer-link app-drawer-cta" href="/register"><i class="bi bi-person-plus"></i> إنشاء حساب</a>
+        {% endif %}
+        <div class="app-drawer-divider"></div>
+        <div class="app-drawer-title">معلومات</div>
+        <a class="app-drawer-link" href="/about"><i class="bi bi-info-circle"></i> عن المنصة</a>
+        <a class="app-drawer-link" href="/faq"><i class="bi bi-question-circle"></i> الأسئلة الشائعة</a>
+        <a class="app-drawer-link" href="/contact"><i class="bi bi-envelope"></i> اتصل بنا</a>
+        <button type="button" class="app-drawer-close" id="appDrawerClose">إغلاق</button>
+    </div>
+
+    <script>
+    (function(){
+        var btn = document.getElementById('appMoreBtn');
+        var drawer = document.getElementById('appDrawer');
+        var backdrop = document.getElementById('appDrawerBackdrop');
+        var close = document.getElementById('appDrawerClose');
+        function openDrawer(){ if (drawer) drawer.classList.add('open'); if (backdrop) backdrop.classList.add('show'); }
+        function closeDrawer(){ if (drawer) drawer.classList.remove('open'); if (backdrop) backdrop.classList.remove('show'); }
+        if (btn) btn.addEventListener('click', openDrawer);
+        if (backdrop) backdrop.addEventListener('click', closeDrawer);
+        if (close) close.addEventListener('click', closeDrawer);
+        if (drawer) drawer.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeDrawer); });
+        var backBtn = document.getElementById('appBackBtn');
+        if (backBtn) backBtn.addEventListener('click', function(){
+            if (window.history.length > 1) { window.history.back(); }
+            else { window.location.href = '/'; }
+        });
+    })();
+    </script>
+    {% endif %}
+
     <script>
         function updateThemeIcon() {
             var dark = document.documentElement.getAttribute('data-theme') === 'dark';

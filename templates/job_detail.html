@@ -51,7 +51,7 @@
                         </div>
                         <div class="text-start">
                             {% if job.salary_min %}
-                            <h3 class="salary">{{ job.salary_min }}{% if job.salary_max %} - {{ job.salary_max }}{% endif %}</h3>
+                            <h3 class="salary">{{ job.salary_min|num }}{% if job.salary_max %} - {{ job.salary_max|num }}{% endif %}</h3>
                             <small class="text-muted">دينار جزائري / شهرياً</small>
                             {% endif %}
                         </div>
@@ -146,7 +146,7 @@
                         <tr><td class="text-muted">الولاية</td><td class="fw-bold">{{ job.wilaya or 'الجزائر' }}</td></tr>
                         <tr><td class="text-muted">المستوى</td><td class="fw-bold">{{ job.experience_level or 'غير محدد' }}</td></tr>
                         <tr><td class="text-muted">التخصص</td><td><span class="badge badge-algeria">{{ job.category or 'عام' }}</span></td></tr>
-                        <tr><td class="text-muted">الراتب</td><td class="fw-bold salary">{% if job.salary_min %}{{ job.salary_min }}{% if job.salary_max %} - {{ job.salary_max }}{% endif %} دج{% else %}غير محدد{% endif %}</td></tr>
+                        <tr><td class="text-muted">الراتب</td><td class="fw-bold salary">{% if job.salary_min %}{{ job.salary_min|num }}{% if job.salary_max %} - {{ job.salary_max|num }}{% endif %} دج{% else %}غير محدد{% endif %}</td></tr>
                         <tr><td class="text-muted">عدد المناصب</td><td class="fw-bold">{{ job.positions_count or 1 }}</td></tr>
                         <tr><td class="text-muted">نشر في</td><td>{{ job.created_at|date }}</td></tr>
                         <tr><td class="text-muted">المشاهدات</td><td>{{ job.views_count or 0 }}</td></tr>
@@ -182,6 +182,18 @@
             </div>
             <form method="POST" action="/jobs/{{ job.id }}/apply">
                 <div class="modal-body">
+                    {% if has_cv %}
+                    <div class="alert alert-success py-2 d-flex align-items-center gap-2">
+                        <i class="bi bi-check-circle"></i>
+                        <small>ستُرفق سيرتك الذاتية تلقائياً مع هذا الطلب</small>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning py-2 d-flex align-items-center gap-2">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <small>ليس لديك سيرة ذاتية مرفوعة.
+                        <a href="{{ url_for('profile') }}">أضف سيرتك الآن</a> ليرسلها رب العمل مع طلبك.</small>
+                    </div>
+                    {% endif %}
                     <div class="mb-3">
                         <label class="form-label">رسالة تحفيزية (اختياري)</label>
                         <textarea name="cover_letter" class="form-control" rows="5" placeholder="اكتب رسالة قصيرة توضح فيها سبب اهتمامك بالوظيفة..."></textarea>

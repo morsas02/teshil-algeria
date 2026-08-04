@@ -60,6 +60,13 @@
                         <p class="text-muted small mb-0">{{ app.cover_letter }}</p>
                     </div>
                     {% endif %}
+                    {% if app.cv_url %}
+                    <div class="mt-2">
+                        <a href="{{ url_for('view_cv', worker_id=app.worker_id) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-file-earmark-pdf"></i> عرض السيرة الذاتية
+                        </a>
+                    </div>
+                    {% endif %}
                 </div>
                 <div class="text-start" style="min-width:120px">
                     <span class="badge d-block mb-2 {% if app.status == 'pending' %}bg-warning text-dark{% elif app.status == 'reviewed' %}bg-info{% elif app.status == 'accepted' %}bg-success{% else %}bg-danger{% endif %}">

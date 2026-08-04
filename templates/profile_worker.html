@@ -7,6 +7,38 @@
 <div class="container py-4">
     <div class="row justify-content-center">
         <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-3"><i class="bi bi-file-earmark-person text-primary"></i> السيرة الذاتية</h5>
+                    {% if user.cv_url %}
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                        <div>
+                            <span class="badge bg-success mb-2"><i class="bi bi-check-circle"></i> سيرة مرفوعة</span>
+                            <div class="text-muted small">تُرسل تلقائياً مع كل طلب توظيف تقدمه</div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a href="{{ url_for('view_cv', worker_id=user.worker_id) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i> عرض السيرة
+                            </a>
+                            <form method="POST" action="{{ url_for('delete_cv') }}" onsubmit="return confirm('حذف السيرة الذاتية؟');">
+                                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i> حذف</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">لم ترفع سيرة ذاتية بعد. أضف سيرتك بصيغة PDF ليرسلها رب العمل تلقائياً مع طلباتك.</p>
+                    {% endif %}
+                    <form action="{{ url_for('upload_cv') }}" method="POST" enctype="multipart/form-data" class="mt-3">
+                        <div class="input-group">
+                            <input type="file" name="cv" class="form-control" accept="application/pdf" required>
+                            <button class="btn btn-primary"><i class="bi bi-upload"></i>
+                                {% if user.cv_url %}استبدال السيرة{% else %}رفع السيرة{% endif %}
+                            </button>
+                        </div>
+                        <small class="text-muted">PDF فقط — الحد الأقصى 5 ميغابايت</small>
+                    </form>
+                </div>
+            </div>
             <div class="card">
                 <div class="card-body p-4">
                     <div class="text-center mb-4">
@@ -104,6 +136,22 @@
                             </div>
                         </div>
                         <button type="submit" class="btn btn-primary btn-lg w-100"><i class="bi bi-save"></i> حفظ التعديلات</button>
+                    </form>
+                </div>
+            </div>
+            <div class="card border-danger mt-4">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold text-danger mb-2"><i class="bi bi-exclamation-triangle"></i> حذف الحساب</h5>
+                    <p class="text-muted small mb-3">حذف حسابك نهائياً يزيل ملفك الشخصي، سيرتك الذاتية، تقديماتك، طلباتك وإشعاراتك بشكل دائم ولا يمكن التراجع عنه. (متطلب من متجر Google Play)</p>
+                    <form method="POST" action="{{ url_for('delete_account') }}" onsubmit="return confirm('هل أنت متأكد؟ سيتم حذف حسابك وجميع بياناتك نهائياً ولا يمكن التراجع.');">
+                        <div class="row g-2 align-items-center">
+                            <div class="col-md-6">
+                                <input type="password" name="password" class="form-control" placeholder="أدخل كلمة المرور للتأكيد" required autocomplete="current-password">
+                            </div>
+                            <div class="col-md-6">
+                                <button type="submit" class="btn btn-outline-danger w-100"><i class="bi bi-trash"></i> حذف الحساب نهائياً</button>
+                            </div>
+                        </div>
                     </form>
                 </div>
             </div>

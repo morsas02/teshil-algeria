@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}تطبيق أندرويد{% endblock %}
+{% block meta_desc %}حمّل تطبيق تسهيل على هاتفك الأندرويد واستخدم المنصة بسهولة وسرعة كتطبيق أصلي.{% endblock %}
+{% block content %}
+
+<style>
+    .app-hero { background: linear-gradient(135deg, #064e3b 0%, #059669 50%, #10b981 100%); background-size: 200% 200%; animation: gradientShift 8s ease infinite; color: #fff; padding: 64px 0 76px; position: relative; overflow: hidden; }
+    .app-hero::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle at 30% 50%, rgba(255,255,255,0.07) 0%, transparent 50%), radial-gradient(circle at 75% 25%, rgba(52,211,153,0.14) 0%, transparent 45%); }
+    .app-hero::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 70px; background: var(--gray-50); clip-path: ellipse(70% 100% at 50% 100%); }
+    .app-logo-wrap { width: 112px; height: 112px; border-radius: 28px; background: rgba(255,255,255,0.14); border: 2px solid rgba(255,255,255,0.25); display: flex; align-items: center; justify-content: center; padding: 8px; backdrop-filter: blur(8px); animation: float 4s ease-in-out infinite; box-shadow: 0 16px 40px rgba(0,0,0,0.3); flex-shrink: 0; }
+    .app-logo-wrap img { width: 100%; height: 100%; border-radius: 20px; object-fit: cover; display: block; }
+    .dl-btn { background: linear-gradient(135deg, var(--accent), #f59e0b); border: none; color: #fff; font-weight: 800; padding: 16px 40px; border-radius: 14px; font-size: 1.1rem; box-shadow: 0 10px 28px rgba(245,158,11,0.4); transition: all 0.3s cubic-bezier(0.4,0,0.2,1); }
+    .dl-btn:hover { transform: translateY(-3px) scale(1.03); box-shadow: 0 16px 36px rgba(245,158,11,0.55); color: #fff; }
+    .step-card { background: #fff; border-radius: var(--radius-lg); padding: 24px; box-shadow: var(--shadow); border: 1px solid var(--gray-100); height: 100%; transition: all .3s; }
+    .step-card:hover { box-shadow: var(--shadow-xl); transform: translateY(-4px); border-color: var(--primary); }
+    .step-num { width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, var(--primary), #34d399); color: #fff; font-weight: 800; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
+    .feature-pill { display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.16); color: #fff; border: 1px solid rgba(255,255,255,0.28); border-radius: 30px; padding: 8px 16px; font-weight: 600; font-size: .88rem; backdrop-filter: blur(6px); }
+    [data-theme="dark"] .step-card { background: #1e293b; border-color: #334155; }
+    .phone { width: 300px; height: 560px; border-radius: 36px; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.18); position: relative; padding: 46px 14px 14px; }
+    .phone-notch { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 70px; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.4); }
+    .phone-screen { background: #fff; border-radius: 22px; height: 100%; overflow: hidden; display: flex; flex-direction: column; }
+    .ph-header { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 1px solid #f1f5f9; }
+    .ph-logo { width: 30px; height: 30px; border-radius: 9px; object-fit: cover; }
+    .ph-title { font-size: .85rem; font-weight: 800; color: #064e3b; }
+    .ph-body { flex: 1; display: flex; flex-direction: column; gap: 10px; padding: 16px 14px; }
+    .ph-line { height: 12px; border-radius: 6px; background: #f1f5f9; }
+    .ph-line.short { width: 55%; }
+    .ph-line.green { height: 40px; border-radius: 10px; background: linear-gradient(135deg, #059669, #10b981); }
+    .ph-nav { display: flex; border-top: 1px solid #f1f5f9; padding: 8px 6px; }
+    .ph-nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: .5rem; color: #94a3b8; font-weight: 700; }
+    .ph-nav-item i { font-size: .85rem; }
+    .ph-nav-item.on { color: #059669; }
+    .ph-nav-item.on i { filter: drop-shadow(0 2px 4px rgba(5,150,105,.4)); }
+</style>
+
+<section class="app-hero">
+    <div class="container position-relative">
+        <div class="row align-items-center g-4">
+            <div class="col-lg-7">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="app-logo-wrap"><img src="/static/img/icon-192.png?v=8" alt="شعار تسهيل"></div>
+                    <div>
+                        <h1 style="font-weight:800;margin:0;">تطبيق تسهيل</h1>
+                        <span class="badge bg-white text-dark mt-1">الإصدار 1.9 • أندرويد 7.0+</span>
+                    </div>
+                </div>
+                <p style="opacity:0.9;font-size:1.05rem;line-height:1.8;">حمّل تطبيق تسهيل على هاتفك وابقَ متصلاً بالفرص في كل وقت. المنصة كاملة بين يديك: وظائف، عمال، إعلانات، ومحفظة دفع — بسرعة وسهولة كتطبيق أصلي.</p>
+                <div class="d-flex flex-wrap gap-2 mb-4">
+                    <span class="feature-pill"><i class="bi bi-check-circle"></i> فتح سريع من شاشة الهاتف</span>
+                    <span class="feature-pill"><i class="bi bi-check-circle"></i> إشعارات مباشرة</span>
+                    <span class="feature-pill"><i class="bi bi-check-circle"></i> مجاني 100%</span>
+                </div>
+                <a href="{{ app_apk_url }}" class="dl-btn" download><i class="bi bi-download me-2"></i> تحميل التطبيق</a>
+                <div class="mt-3"><small style="opacity:0.75;">الحجم: 8MB • يعمل على جميع هواتف أندرويد</small></div>
+            </div>
+            <div class="col-lg-5 d-none d-lg-flex justify-content-center">
+                <div class="phone">
+                    <div class="phone-notch"></div>
+                    <div class="phone-screen">
+                        <div class="ph-header">
+                            <img class="ph-logo" src="/static/img/icon-192.png?v=8" alt="">
+                            <span class="ph-title">تسهيل</span>
+                            <i class="bi bi-bell ms-auto" style="color:#94a3b8;font-size:.8rem;"></i>
+                        </div>
+                        <div class="ph-body">
+                            <div class="ph-line green"></div>
+                            <div class="ph-line short"></div>
+                            <div class="ph-line"></div>
+                            <div class="ph-line short"></div>
+                            <div class="ph-line" style="width:70%;"></div>
+                            <div class="ph-line green" style="height:56px;"></div>
+                        </div>
+                        <div class="ph-nav">
+                            <div class="ph-nav-item on"><i class="bi bi-house-door-fill"></i>الرئيسية</div>
+                            <div class="ph-nav-item"><i class="bi bi-search"></i>الوظائف</div>
+                            <div class="ph-nav-item"><i class="bi bi-people"></i>العمال</div>
+                            <div class="ph-nav-item"><i class="bi bi-megaphone"></i>أعلن</div>
+                            <div class="ph-nav-item"><i class="bi bi-grid"></i>المزيد</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="container" style="margin-top:-40px;position:relative;z-index:10;">
+    <div class="card p-4 mb-4">
+        <h4 class="mb-2"><i class="bi bi-phone text-primary"></i> كيف تثبّت التطبيق؟</h4>
+        <small class="text-muted">اتبع هذه الخطوات البسيطة على هاتفك الأندرويد:</small>
+        <div class="row mt-3 g-3">
+            <div class="col-md-3">
+                <div class="step-card">
+                    <div class="step-num">1</div>
+                    <h6 class="fw-bold">حمّل الملف</h6>
+                    <small class="text-muted">اضغط على زر "تحميل التطبيق" بالأعلى وانتظر اكتمال التحميل.</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="step-card">
+                    <div class="step-num">2</div>
+                    <h6 class="fw-bold">افتح الملف</h6>
+                    <small class="text-muted">افتح ملف ta9eef.apk من إشعارات التحميل أو مجلد "التنزيلات".</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="step-card">
+                    <div class="step-num">3</div>
+                    <h6 class="fw-bold">اسمح بالتثبيت</h6>
+                    <small class="text-muted">إذا طلب الهاتف "السماح بتثبيت تطبيقات من مصادر غير معروفة" فعّلها.</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="step-card">
+                    <div class="step-num">4</div>
+                    <h6 class="fw-bold">ثبّت وافتح</h6>
+                    <small class="text-muted">اضغط "تثبيت" ثم "فتح" — التطبيق جاهز للاستخدام على شاشتك الرئيسية.</small>
+                </div>
+            </div>
+        </div>
+        <div class="alert alert-warning mt-4 mb-0 d-flex align-items-center gap-2" style="border:none;">
+            <i class="bi bi-shield-exclamation"></i>
+            <span>قد تظهر رسالة تحذير لأن التطبيق خارج متجر Google Play. اضغط "مزيد من التفاصيل" ثم "التثبيت على أي حال" — التطبيق آمن وموقّع من منصة تسهيل.</span>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

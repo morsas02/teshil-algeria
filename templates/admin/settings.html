@@ -68,7 +68,7 @@
                             <tr>
                                 <td class="fw-bold">{{ pkg.name }}</td>
                                 <td>{{ pkg.credits }}</td>
-                                <td>{{ pkg.price }} دج</td>
+                                <td>{{ pkg.price|num }} دج</td>
                                 <td>{{ pkg.duration_days }} يوم</td>
                                 <td>
                                     {% if pkg.is_active %}

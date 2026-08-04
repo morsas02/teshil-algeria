@@ -31,7 +31,7 @@
                 <hr>
                 <div class="text-center">
                     <div class="text-muted small">سعر الأسبوع</div>
-                    <div style="font-size:2.2rem;font-weight:800;color:var(--primary);">{{ price_per_week }} <small>دج</small></div>
+                    <div style="font-size:2.2rem;font-weight:800;color:var(--primary);">{{ price_per_week|num }} <small>دج</small></div>
                 </div>
             </div>
         </div>
@@ -75,7 +75,7 @@
                             <select name="duration_days" class="form-select" id="durationSelect">
                                 {% for p in plans %}
                                 <option value="{{ p.days }}" data-price="{{ p.price }}">
-                                    {{ p.days }} يوم — {{ p.price }} دج
+                                    {{ p.days }} يوم — {{ p.price|num }} دج
                                 </option>
                                 {% endfor %}
                             </select>

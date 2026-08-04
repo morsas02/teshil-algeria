@@ -9,8 +9,8 @@
         <div class="col-lg-4 mb-4">
             <div class="card text-center p-4">
                 <div style="font-size:0.85rem;color:var(--gray-500);font-weight:600;">الرصيد الحالي</div>
-                <div style="font-size:2.5rem;font-weight:800;color:var(--primary);">{{ balance }} <span style="font-size:1rem;font-weight:600;">دج</span></div>
-                <div style="font-size:0.85rem;color:var(--gray-500);">تكلفة نشر وظيفة واحدة: {{ job_price }} دج</div>
+                <div style="font-size:2.5rem;font-weight:800;color:var(--primary);">{{ balance|num }} <span style="font-size:1rem;font-weight:600;">دج</span></div>
+                <div style="font-size:0.85rem;color:var(--gray-500);">تكلفة نشر وظيفة واحدة: {{ job_price|num }} دج</div>
                 <div class="mt-3">
                     <a href="#packages" class="btn btn-primary w-100 mb-2">اشترِ باقة</a>
                     <button type="button" class="btn btn-outline-primary w-100" data-bs-toggle="modal" data-bs-target="#topupModal">شحن الرصيد</button>
@@ -38,9 +38,9 @@
                                 <td>{{ t.description }}</td>
                                 <td>
                                     {% if t.type == 'credit' %}
-                                    <span class="text-success fw-bold">+{{ t.amount }}</span>
+                                    <span class="text-success fw-bold">+{{ t.amount|num }} دج</span>
                                     {% else %}
-                                    <span class="text-danger fw-bold">-{{ t.amount }}</span>
+                                    <span class="text-danger fw-bold">-{{ t.amount|num }} دج</span>
                                     {% endif %}
                                 </td>
                                 <td>
@@ -78,7 +78,7 @@
                     <span class="badge bg-warning text-dark position-absolute" style="top:-8px;left:50%;transform:translateX(-50%);font-size:0.7rem;">الأكثر مبيعاً</span>
                     {% endif %}
                     <h6 class="fw-bold mt-2">{{ pkg.name }}</h6>
-                    <div style="font-size:2rem;font-weight:800;color:var(--primary);">{{ pkg.price }} <span style="font-size:0.8rem;font-weight:600;">دج</span></div>
+                    <div style="font-size:2rem;font-weight:800;color:var(--primary);">{{ pkg.price|num }} <span style="font-size:0.8rem;font-weight:600;">دج</span></div>
                     <div style="font-size:0.9rem;color:var(--gray-500);">{{ pkg.credits }} رصيد</div>
                     <div style="font-size:0.75rem;color:var(--gray-400);">صالح لمدة {{ pkg.duration_days }} يوم</div>
                     <hr>

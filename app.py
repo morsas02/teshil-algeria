@@ -63,6 +63,21 @@ def date_filter(val):
         return val[:10]
     return val.strftime('%Y-%m-%d')
 
+def fmt_num(val):
+    if val is None or val == '':
+        return ''
+    try:
+        f = float(val)
+    except (ValueError, TypeError):
+        return str(val)
+    if f.is_integer():
+        return f'{int(f):,}'
+    return f'{f:,.2f}'
+
+@app.template_filter('num')
+def num_filter(val):
+    return fmt_num(val)
+
 limiter = Limiter(app=app, key_func=get_remote_address, storage_uri='memory://')
 
 CSRF_SAFE_ENDPOINTS = {'login', 'register', 'forgot_password', 'reset_password',
@@ -79,6 +94,12 @@ def csrf_protect():
                 return jsonify({'error': 'CSRF token invalid'}), 400
             flash('انتهت صلاحية الجلسة، حاول مرة أخرى', 'danger')
             return redirect(request.referrer or url_for('index'))
+
+@app.before_request
+def detect_app_mode():
+    ua = request.user_agent.string or ''
+    if request.args.get('app') == '1' or 'Ta9eefApp' in ua:
+        session['is_app'] = True
 
 @app.after_request
 def add_security_headers(response):
@@ -106,10 +127,15 @@ ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', 'admin@ta9eef.dz')
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123456')
 JOB_PRICE = 1000
 AD_PRICE_PER_WEEK = 5000
+APP_VERSION_NAME = '1.9'
+APP_VERSION_CODE = 8
+APP_APK_URL = '/static/app/ta9eef.apk?v=10'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 AVATAR_MAX_SIZE = 2 * 1024 * 1024
 ALLOWED_RECEIPT_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'pdf'}
 RECEIPT_MAX_SIZE = 5 * 1024 * 1024
+ALLOWED_CV_EXTENSIONS = {'pdf'}
+CV_MAX_SIZE = 5 * 1024 * 1024
 
 def validate_image(fp):
     header = fp.read(32)
@@ -462,6 +488,15 @@ SCHEMA = '''
         FOREIGN KEY (user_id) REFERENCES users(id)
     );
 
+    CREATE TABLE IF NOT EXISTS device_tokens (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        token TEXT NOT NULL UNIQUE,
+        app_version TEXT,
+        platform TEXT DEFAULT 'android',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
     CREATE TABLE IF NOT EXISTS reviews (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         employer_id INTEGER NOT NULL,
@@ -471,6 +506,14 @@ SCHEMA = '''
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (employer_id) REFERENCES employers(id),
         FOREIGN KEY (worker_id) REFERENCES workers(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS app_analytics (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        event TEXT,
+        app_version TEXT,
+        user_agent TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS contact_messages (
@@ -586,6 +629,14 @@ SCHEMA = '''
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id)
     );
+
+    CREATE TABLE IF NOT EXISTS news_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        link_url TEXT DEFAULT '',
+        is_active INTEGER DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
 '''
 
 def _table_names(conn):
@@ -618,6 +669,96 @@ def write_data_backup():
     for old in keep:
         try:
             os.remove(old)
+        except OSError:
+            pass
+    return path
+
+def _delete_user_account(conn, user_id):
+    user = conn.execute('SELECT * FROM users WHERE id = %s', (user_id,)).fetchone()
+    if not user:
+        return
+    user = dict(user)
+    snapshot = {'users': [user]}
+
+    worker = conn.execute('SELECT * FROM workers WHERE user_id = %s', (user_id,)).fetchone()
+    employer = conn.execute('SELECT * FROM employers WHERE user_id = %s', (user_id,)).fetchone()
+    worker = dict(worker) if worker else None
+    employer = dict(employer) if employer else None
+
+    if worker:
+        snapshot['workers'] = [worker]
+        wid = worker['id']
+        for t in ('applications', 'saved_jobs', 'requests', 'reviews'):
+            snapshot.setdefault(t, []).extend(
+                dict(r) for r in conn.execute(f'SELECT * FROM {t} WHERE worker_id = %s', (wid,)).fetchall()
+            )
+
+    if employer:
+        snapshot['employers'] = [employer]
+        eid = employer['id']
+        job_ids = [r['id'] for r in conn.execute('SELECT id FROM jobs WHERE employer_id = %s', (eid,)).fetchall()]
+        if job_ids:
+            snapshot['jobs'] = [dict(r) for r in conn.execute('SELECT * FROM jobs WHERE employer_id = %s', (eid,)).fetchall()]
+            placeholders = ', '.join(['%s'] * len(job_ids))
+            for t in ('applications', 'saved_jobs', 'requests'):
+                snapshot.setdefault(t, []).extend(
+                    dict(r) for r in conn.execute(f'SELECT * FROM {t} WHERE job_id IN ({placeholders})', tuple(job_ids)).fetchall()
+                )
+        for t, col in (('requests', 'employer_id'), ('reviews', 'employer_id')):
+            snapshot.setdefault(t, []).extend(
+                dict(r) for r in conn.execute(f'SELECT * FROM {t} WHERE {col} = %s', (eid,)).fetchall()
+            )
+
+    for t in ('notifications', 'push_subscriptions', 'transactions', 'reset_tokens', 'payment_requests', 'ad_orders'):
+        snapshot.setdefault(t, []).extend(
+            dict(r) for r in conn.execute(f'SELECT * FROM {t} WHERE user_id = %s', (user_id,)).fetchall()
+        )
+
+    backup_dir = os.path.join(STORAGE_ROOT, 'backups', 'deleted_accounts')
+    os.makedirs(backup_dir, exist_ok=True)
+    stamp = datetime.now().strftime('%Y%m%d-%H%M%S')
+    path = os.path.join(backup_dir, f'ta9eef-deleted-user-{user_id}-{stamp}.json')
+    with open(path, 'w', encoding='utf-8') as f:
+        json.dump(snapshot, f, ensure_ascii=False, default=_json_default)
+
+    if worker:
+        wid = worker['id']
+        for t in ('applications', 'saved_jobs', 'requests', 'reviews'):
+            conn.execute(f'DELETE FROM {t} WHERE worker_id = %s', (wid,))
+    if employer:
+        eid = employer['id']
+        job_ids = [r['id'] for r in conn.execute('SELECT id FROM jobs WHERE employer_id = %s', (eid,)).fetchall()]
+        if job_ids:
+            placeholders = ', '.join(['%s'] * len(job_ids))
+            for t in ('applications', 'saved_jobs', 'requests'):
+                conn.execute(f'DELETE FROM {t} WHERE job_id IN ({placeholders})', tuple(job_ids))
+            conn.execute(f'DELETE FROM jobs WHERE employer_id IN ({placeholders})', tuple(job_ids))
+        for t, col in (('requests', 'employer_id'), ('reviews', 'employer_id')):
+            conn.execute(f'DELETE FROM {t} WHERE {col} = %s', (eid,))
+        conn.execute('DELETE FROM employers WHERE user_id = %s', (user_id,))
+    if worker:
+        conn.execute('DELETE FROM workers WHERE user_id = %s', (user_id,))
+
+    for t in ('notifications', 'push_subscriptions', 'transactions', 'reset_tokens', 'payment_requests', 'ad_orders'):
+        conn.execute(f'DELETE FROM {t} WHERE user_id = %s', (user_id,))
+
+    conn.execute('DELETE FROM users WHERE id = %s', (user_id,))
+    conn.commit()
+
+    for field in ('avatar_url',):
+        rel = user.get(field)
+        if rel:
+            try:
+                p = os.path.join(STORAGE_ROOT, 'uploads', 'avatars', os.path.basename(rel))
+                if os.path.exists(p):
+                    os.remove(p)
+            except OSError:
+                pass
+    if worker and worker.get('cv_url'):
+        try:
+            p = os.path.join(STORAGE_ROOT, 'cvs', os.path.basename(worker['cv_url']))
+            if os.path.exists(p):
+                os.remove(p)
         except OSError:
             pass
     return path
@@ -739,6 +880,22 @@ init_db()
 
 threading.Thread(target=_daily_loop, daemon=True).start()
 
+KEEPALIVE_URL = os.environ.get('APP_URL', 'https://talented-respect-production.up.railway.app')
+
+def _keepalive_loop():
+    import urllib.request
+    url = KEEPALIVE_URL.rstrip('/') + '/health'
+    while True:
+        try:
+            req = urllib.request.Request(url, method='GET')
+            urllib.request.urlopen(req, timeout=15).read()
+        except Exception:
+            pass
+        time.sleep(180)
+
+if os.environ.get('DATABASE_URL'):
+    threading.Thread(target=_keepalive_loop, daemon=True).start()
+
 def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -847,6 +1004,83 @@ def send_push(subscription, title, body, url=None):
     except Exception:
         return False
 
+FCM_CACHE = {'sa': None, 'token': None, 'exp': 0}
+
+def _fcm_sa():
+    if FCM_CACHE['sa'] is not None:
+        return FCM_CACHE['sa']
+    sa_json = os.environ.get('FCM_SERVICE_ACCOUNT_JSON') or ''
+    sa_file = os.environ.get('FCM_SERVICE_ACCOUNT_FILE') or ''
+    if not sa_json and sa_file:
+        try:
+            with open(sa_file) as f:
+                sa_json = f.read()
+        except Exception:
+            sa_json = ''
+    sa = {}
+    if sa_json:
+        try:
+            sa = json.loads(sa_json)
+        except Exception:
+            sa = {}
+    FCM_CACHE['sa'] = sa
+    return sa
+
+def _b64url(data):
+    import base64
+    return base64.urlsafe_b64encode(data).rstrip(b'=').decode('ascii')
+
+def send_fcm(token, title, body, url=None):
+    sa = _fcm_sa()
+    project_id = sa.get('project_id')
+    client_email = sa.get('client_email')
+    private_key = sa.get('private_key')
+    if not (project_id and client_email and private_key):
+        return False
+    try:
+        from cryptography.hazmat.primitives import serialization, hashes
+        from cryptography.hazmat.primitives.asymmetric import padding as apadding
+        now = int(time.time())
+        if not FCM_CACHE['token'] or now >= FCM_CACHE['exp'] - 60:
+            header = {'alg': 'RS256', 'typ': 'JWT'}
+            claims = {'iss': client_email,
+                      'scope': 'https://www.googleapis.com/auth/firebase.messaging',
+                      'aud': 'https://oauth2.googleapis.com/token',
+                      'iat': now, 'exp': now + 3600}
+            signing_input = _b64url(json.dumps(header, separators=(',', ':')).encode()) + '.' + _b64url(json.dumps(claims, separators=(',', ':')).encode())
+            key = serialization.load_pem_private_key(private_key.encode(), password=None)
+            sig = key.sign(signing_input.encode(), apadding.PKCS1v15(), hashes.SHA256())
+            assertion = signing_input + '.' + _b64url(sig)
+            r = requests.post('https://oauth2.googleapis.com/token',
+                              data={'grant_type': 'urn:ietf:params:oauth:grant-type:jwt-bearer', 'assertion': assertion},
+                              timeout=10)
+            tok = r.json().get('access_token') if r.ok else None
+            if not tok:
+                return False
+            FCM_CACHE['token'] = tok
+            FCM_CACHE['exp'] = now + 3600
+        msg = {'message': {'token': token,
+                           'notification': {'title': title, 'body': body},
+                           'data': {'url': url or '/'}}}
+        r = requests.post('https://fcm.googleapis.com/v1/projects/%s/messages:send' % project_id,
+                          json=msg,
+                          headers={'Authorization': 'Bearer ' + FCM_CACHE['token'],
+                                   'Content-Type': 'application/json'},
+                          timeout=10)
+        return r.ok
+    except Exception:
+        return False
+
+def send_fcm_all(title, body, url=None):
+    try:
+        conn = get_db()
+        rows = conn.execute('SELECT token FROM device_tokens').fetchall()
+        conn.close()
+    except Exception:
+        return
+    for r in rows:
+        send_fcm(r['token'], title, body, url)
+
 def notify_all_subscribers(title, body, url=None):
     try:
         conn = get_db()
@@ -867,6 +1101,7 @@ def notify_all_subscribers(title, body, url=None):
             conn.close()
         except Exception:
             pass
+    send_fcm_all(title, body, url)
 
 @app.route('/push/subscribe', methods=['POST'])
 @login_required
@@ -930,21 +1165,6 @@ def get_stats():
     _stats_cache['data'] = stats
     return stats
 
-@app.before_request
-def handle_lang():
-    lang = request.args.get('lang')
-    if lang in ('ar', 'fr'):
-        session['lang'] = lang
-        referrer = request.referrer or url_for('index')
-        from urllib.parse import urlparse, urlunparse, urlencode, parse_qs
-        parsed = urlparse(referrer)
-        params = parse_qs(parsed.query)
-        params.pop('lang', None)
-        new_query = urlencode(params, doseq=True)
-        new_url = urlunparse((parsed.scheme, parsed.netloc, parsed.path, parsed.params, new_query, parsed.fragment))
-        if new_url and new_url != referrer:
-            return redirect(new_url)
-
 def dt_fmt(value, fmt='%Y-%m-%d %H:%M'):
     if not value:
         return ''
@@ -956,6 +1176,9 @@ app.add_template_filter(dt_fmt, 'dt_fmt')
 
 @app.context_processor
 def inject_globals():
+    ua = request.user_agent.string or ''
+    m = re.search(r'Ta9eefApp/([\d.]+)', ua)
+    app_installed = m.group(1) if m else None
     ctx = {
         'wilayas': ALGERIAN_WILAYAS,
         'wilaya_slugs': WILAYA_SLUGS,
@@ -963,6 +1186,12 @@ def inject_globals():
         'contract_types': CONTRACT_TYPES,
         'now': datetime.now(),
         'stats': get_stats(),
+        'is_app': session.get('is_app', False),
+        'app_version_name': APP_VERSION_NAME,
+        'app_version_code': APP_VERSION_CODE,
+        'app_apk_url': APP_APK_URL,
+        'app_installed': app_installed,
+        'app_update_available': bool(app_installed and app_installed != APP_VERSION_NAME),
     }
 
     if 'user_id' in session:
@@ -1017,8 +1246,26 @@ def index():
         ORDER BY sort_order ASC, id DESC
     ''').fetchall()
 
+    news_items = conn.execute('''
+        SELECT * FROM news_items WHERE is_active = 1
+        ORDER BY id DESC LIMIT 8
+    ''').fetchall()
+
+    ticker_jobs = conn.execute('''
+        SELECT j.id, j.title, e.company_name FROM jobs j
+        JOIN employers e ON j.employer_id = e.id
+        WHERE j.status = 'approved'
+        ORDER BY j.created_at DESC LIMIT 6
+    ''').fetchall()
+
+    ticker_items = []
+    for n in news_items:
+        ticker_items.append({'type': 'news', 'title': n['title'], 'url': n['link_url'] or ''})
+    for j in ticker_jobs:
+        ticker_items.append({'type': 'job', 'title': f"{j['title']} — {j['company_name']}", 'url': url_for('job_detail', job_id=j['id'])})
+
     conn.close()
-    return render_template('index.html', featured=featured, recent=recent, urgent=urgent, top_employers=top_employers, banners=banners)
+    return render_template('index.html', featured=featured, recent=recent, urgent=urgent, top_employers=top_employers, banners=banners, news_items=news_items, ticker_jobs=ticker_jobs, ticker_items=ticker_items)
 
 @app.route('/register', methods=['GET', 'POST'])
 @limiter.limit("3 per minute")
@@ -1355,13 +1602,35 @@ def logout():
     flash('تم تسجيل الخروج بنجاح', 'info')
     return redirect(url_for('index'))
 
+@app.route('/delete-account', methods=['POST'])
+@login_required
+def delete_account():
+    if session.get('user_type') == 'admin':
+        flash('لا يمكن حذف حساب المشرف، تواصل مع مشرف آخر', 'danger')
+        return redirect(url_for('profile'))
+
+    password = request.form.get('password', '')
+    conn = get_db()
+    try:
+        user = conn.execute('SELECT id, password FROM users WHERE id = %s', (session['user_id'],)).fetchone()
+        if not user or not check_password_hash(user['password'], password):
+            flash('كلمة المرور غير صحيحة', 'danger')
+            return redirect(url_for('profile'))
+        _delete_user_account(conn, user['id'])
+    finally:
+        conn.close()
+
+    session.clear()
+    flash('تم حذف حسابك وكل بياناتك نهائياً', 'info')
+    return redirect(url_for('index'))
+
 @app.route('/profile', methods=['GET', 'POST'])
 @login_required
 def profile():
     conn = get_db()
     if session['user_type'] == 'worker':
         user = conn.execute('''
-            SELECT u.*, w.* FROM users u
+            SELECT u.*, w.*, w.id AS worker_id FROM users u
             JOIN workers w ON w.user_id = u.id WHERE u.id = %s
         ''', (session['user_id'],)).fetchone()
 
@@ -1435,7 +1704,9 @@ def upload_avatar():
         return redirect(url_for('profile'))
     file.seek(0)
     filename = f'avatar_{session["user_id"]}_{int(time.time())}.{ext}'
-    file.save(os.path.join(STORAGE_ROOT, 'uploads', 'avatars', filename))
+    upload_dir = os.path.join(STORAGE_ROOT, 'uploads', 'avatars')
+    os.makedirs(upload_dir, exist_ok=True)
+    file.save(os.path.join(upload_dir, filename))
     avatar_url = url_for('static', filename=f'uploads/avatars/{filename}')
     conn = get_db()
     conn.execute('UPDATE users SET avatar_url = %s WHERE id = %s', (avatar_url, session['user_id']))
@@ -1444,6 +1715,102 @@ def upload_avatar():
     session['avatar_url'] = avatar_url
     flash('تم تحديث الصورة الشخصية بنجاح!', 'success')
     return redirect(url_for('profile'))
+
+@app.route('/profile/upload-cv', methods=['POST'])
+@worker_required
+def upload_cv():
+    if 'cv' not in request.files:
+        flash('لم يتم اختيار ملف', 'danger')
+        return redirect(url_for('profile'))
+    file = request.files['cv']
+    if file.filename == '':
+        flash('لم يتم اختيار ملف', 'danger')
+        return redirect(url_for('profile'))
+    ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+    if ext not in ALLOWED_CV_EXTENSIONS:
+        flash('يُقبل ملف PDF فقط', 'danger')
+        return redirect(url_for('profile'))
+    file.seek(0, os.SEEK_END)
+    if file.tell() > CV_MAX_SIZE:
+        flash('حجم الملف كبير جداً. الحد الأقصى 5 ميغابايت', 'danger')
+        return redirect(url_for('profile'))
+    file.seek(0)
+    if file.read(4) != b'%PDF':
+        flash('الملف ليس ملف PDF صالحاً', 'danger')
+        return redirect(url_for('profile'))
+    file.seek(0)
+    filename = f'cv_{session["user_id"]}_{int(time.time())}.pdf'
+    cv_dir = os.path.join(STORAGE_ROOT, 'cvs')
+    os.makedirs(cv_dir, exist_ok=True)
+    conn = get_db()
+    old = conn.execute('SELECT cv_url FROM workers WHERE user_id = %s', (session['user_id'],)).fetchone()
+    if old and old['cv_url']:
+        old_path = os.path.join(cv_dir, os.path.basename(old['cv_url']))
+        if os.path.exists(old_path):
+            try:
+                os.remove(old_path)
+            except OSError:
+                pass
+    file.save(os.path.join(cv_dir, filename))
+    cv_url = f'/static/cvs/{filename}'
+    conn.execute('UPDATE workers SET cv_url = %s WHERE user_id = %s', (cv_url, session['user_id']))
+    conn.commit()
+    conn.close()
+    flash('تم رفع السيرة الذاتية بنجاح!', 'success')
+    return redirect(url_for('profile'))
+
+@app.route('/profile/delete-cv', methods=['POST'])
+@worker_required
+def delete_cv():
+    conn = get_db()
+    w = conn.execute('SELECT cv_url FROM workers WHERE user_id = %s', (session['user_id'],)).fetchone()
+    if w and w['cv_url']:
+        old_path = os.path.join(STORAGE_ROOT, 'cvs', os.path.basename(w['cv_url']))
+        if os.path.exists(old_path):
+            try:
+                os.remove(old_path)
+            except OSError:
+                pass
+        conn.execute('UPDATE workers SET cv_url = NULL WHERE user_id = %s', (session['user_id'],))
+        conn.commit()
+        conn.close()
+        flash('تم حذف السيرة الذاتية', 'info')
+    else:
+        conn.close()
+        flash('لا توجد سيرة ذاتية لحذفها', 'warning')
+    return redirect(url_for('profile'))
+
+@app.route('/cv/<int:worker_id>')
+@login_required
+def view_cv(worker_id):
+    conn = get_db()
+    w = conn.execute('SELECT cv_url, user_id FROM workers WHERE id = %s', (worker_id,)).fetchone()
+    if not w or not w['cv_url']:
+        conn.close()
+        abort(404)
+    user_id = session['user_id']
+    user_type = session.get('user_type')
+    allowed = False
+    if user_type == 'admin' or w['user_id'] == user_id:
+        allowed = True
+    elif user_type == 'employer':
+        emp = conn.execute('SELECT id FROM employers WHERE user_id = %s', (user_id,)).fetchone()
+        if emp:
+            app_row = conn.execute('''
+                SELECT 1 FROM applications a JOIN jobs j ON a.job_id = j.id
+                WHERE a.worker_id = %s AND j.employer_id = %s LIMIT 1
+            ''', (worker_id, emp['id'])).fetchone()
+            allowed = app_row is not None
+    conn.close()
+    if not allowed:
+        abort(403)
+    filename = os.path.basename(w['cv_url'])
+    base = os.path.join(STORAGE_ROOT, 'cvs')
+    local = os.path.join(app.root_path, 'static', 'cvs')
+    source = base if os.path.exists(os.path.join(base, filename)) else local
+    if not os.path.exists(os.path.join(source, filename)):
+        abort(404)
+    return send_from_directory(source, filename)
 
 @app.route('/jobs')
 def jobs():
@@ -1543,6 +1910,47 @@ def health():
     except Exception:
         return jsonify({'status': 'error'}), 500
 
+@app.route('/api/analytics')
+def analytics_ping():
+    event = request.args.get('event', 'open')
+    ua = request.user_agent.string or ''
+    m = re.search(r'Ta9eefApp/([\d.]+)', ua)
+    app_version = m.group(1) if m else None
+    if app_version or event in ('web', 'open'):
+        try:
+            conn = get_db()
+            conn.execute('INSERT INTO app_analytics (event, app_version, user_agent) VALUES (%s, %s, %s)',
+                         (event, app_version, ua[:300]))
+            conn.commit()
+            conn.close()
+        except Exception:
+            pass
+    return ('', 204)
+
+@app.route('/api/push/register')
+def push_register():
+    token = (request.args.get('token') or '').strip()
+    if not token or len(token) > 512:
+        return ('', 400)
+    ua = request.user_agent.string or ''
+    m = re.search(r'Ta9eefApp/([\d.]+)', ua)
+    app_version = m.group(1) if m else None
+    is_pg = bool(os.environ.get('DATABASE_URL', ''))
+    try:
+        conn = get_db()
+        if is_pg:
+            conn.execute('''INSERT INTO device_tokens (token, app_version) VALUES (%s, %s)
+                            ON CONFLICT (token) DO UPDATE SET last_seen = CURRENT_TIMESTAMP''',
+                         (token, app_version))
+        else:
+            conn.execute('INSERT OR IGNORE INTO device_tokens (token, app_version) VALUES (%s, %s)',
+                         (token, app_version))
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
+    return ('', 204)
+
 @app.route('/_version')
 def version():
     import os
@@ -1592,6 +2000,7 @@ def job_detail(job_id):
 
         has_applied = False
         is_saved = False
+        has_cv = False
         if 'user_id' in session and session['user_type'] == 'worker':
             worker = conn.execute('SELECT id FROM workers WHERE user_id = %s', (session['user_id'],)).fetchone()
             if worker:
@@ -1602,6 +2011,10 @@ def job_detail(job_id):
                 is_saved = bool(conn.execute(
                     'SELECT id FROM saved_jobs WHERE job_id = %s AND worker_id = %s',
                     (job_id, worker['id'])
+                ).fetchone())
+                has_cv = bool(conn.execute(
+                    'SELECT cv_url FROM workers WHERE id = %s AND cv_url IS NOT NULL',
+                    (worker['id'],)
                 ).fetchone())
 
         conn.commit()
@@ -1653,7 +2066,7 @@ def job_detail(job_id):
     if job['company_website']:
         job_jsonld['hiringOrganization']['sameAs'] = job['company_website']
 
-    return render_template('job_detail.html', job=job, similar=similar, has_applied=has_applied, is_saved=is_saved, job_jsonld=job_jsonld)
+    return render_template('job_detail.html', job=job, similar=similar, has_applied=has_applied, is_saved=is_saved, has_cv=has_cv, job_jsonld=job_jsonld)
 
 @app.route('/jobs/create', methods=['GET', 'POST'])
 @employer_required
@@ -1665,7 +2078,7 @@ def create_job():
         job_price = int(price_row['value']) if price_row else JOB_PRICE
 
         if user['wallet_balance'] < job_price:
-            flash(f'رصيدك غير كافٍ. تحتاج إلى {job_price} دج لنشر وظيفة. رصيدك الحالي: {user["wallet_balance"]} دج', 'danger')
+            flash(f'رصيدك غير كافٍ. تحتاج إلى {fmt_num(job_price)} دج لنشر وظيفة. رصيدك الحالي: {fmt_num(user["wallet_balance"])} دج', 'danger')
             conn.close()
             return redirect(url_for('employer_wallet'))
 
@@ -1916,7 +2329,7 @@ def employer_applications():
         SELECT a.*, j.title as job_title, j.wilaya as job_wilaya,
                u.full_name, u.phone, u.email, u.avatar_url,
                w.skills, w.experience_years, w.experience_level,
-               w.education, w.city, w.wilaya, w.about
+               w.education, w.city, w.wilaya, w.about, w.cv_url
         FROM applications a
         JOIN jobs j ON a.job_id = j.id
         JOIN workers w ON a.worker_id = w.id
@@ -2003,10 +2416,10 @@ def upload_receipt(request_id):
     conn.commit()
     conn.close()
     payer = session.get('full_name', 'مستخدم')
-    notify_admin('إيصال دفع مرفوع', f'{payer} رفع إيصال دفع للطلب {request_id} بقيمة {req["amount"]} دج', link='/admin/transactions')
+    notify_admin('إيصال دفع مرفوع', f'{payer} رفع إيصال دفع للطلب {request_id} بقيمة {fmt_num(req["amount"])} دج', link='/admin/transactions')
     send_email(ADMIN_EMAIL, f'إيصال دفع مرفوع - تسهيل ({request_id})',
                f'تم رفع إيصال الدفع للطلب {request_id}:\n'
-               f'المستخدم: {payer}\nالمبلغ: {req["amount"]} دج\n'
+               f'المستخدم: {payer}\nالمبلغ: {fmt_num(req["amount"])} دج\n'
                f'راجعه من لوحة الإدارة: https://talented-respect-production.up.railway.app/admin/transactions')
     flash('تم رفع الإيصال بنجاح. سنقوم بمراجعته قريباً.', 'success')
     return redirect(url_for('payment_status', request_id=request_id))
@@ -2096,7 +2509,7 @@ def create_payment():
     elif amount_manual and amount_manual >= 100:
         amount = amount_manual
         credits = 0
-        description = f'شحن رصيد بقيمة {amount} دج'
+        description = f'شحن رصيد بقيمة {fmt_num(amount)} دج'
         ref_pkg_id = None
     else:
         conn.close()
@@ -2111,10 +2524,10 @@ def create_payment():
     conn.commit()
     conn.close()
     payer = session.get('full_name', 'مستخدم')
-    notify_admin('طلب دفع جديد', f'{payer} أنشأ طلب دفع {reference} بقيمة {amount} دج ({description})', link='/admin/transactions')
+    notify_admin('طلب دفع جديد', f'{payer} أنشأ طلب دفع {reference} بقيمة {fmt_num(amount)} دج ({description})', link='/admin/transactions')
     send_email(ADMIN_EMAIL, f'طلب دفع جديد - تسهيل ({reference})',
                f'طلب دفع جديد في انتظار المراجعة:\n'
-               f'المستخدم: {payer}\nالمرجع: {reference}\nالمبلغ: {amount} دج\n'
+               f'المستخدم: {payer}\nالمرجع: {reference}\nالمبلغ: {fmt_num(amount)} دج\n'
                f'الوصف: {description}\n'
                f'راجعه من لوحة الإدارة: https://talented-respect-production.up.railway.app/admin/transactions')
     return redirect(url_for('payment_status', request_id=reference))
@@ -2247,6 +2660,17 @@ def terms():
 @app.route('/privacy')
 def privacy():
     return render_template('privacy.html')
+
+@app.route('/app')
+def app_page():
+    return render_template('app.html')
+
+@app.route('/static/app/<path:filename>')
+def serve_app_files(filename):
+    base = os.path.join(STORAGE_ROOT, 'app')
+    local = os.path.join(app.root_path, 'static', 'app')
+    source = base if os.path.exists(os.path.join(base, filename)) else local
+    return send_from_directory(source, filename, mimetype='application/vnd.android.package-archive')
 
 # === ADMIN ROUTES ===
 
@@ -2403,7 +2827,7 @@ def admin_handle_job(job_id, action):
                 VALUES (%s, 'credit', %s, %s, %s, %s, 'refund', %s, 'completed')
             ''', (job['employer_id'], job_price, job['wallet_balance'], new_balance, f'استرداد رصيد وظيفة: {job["title"]}', job_id))
             notify(job['employer_id'], 'تم استرداد رصيد الوظيفة',
-                   f'تم استرداد {job_price} دج لوظيفة "{job["title"]}" التي لم تتم الموافقة عليها.', 'success', '/employer/wallet')
+                   f'تم استرداد {fmt_num(job_price)} دج لوظيفة "{job["title"]}" التي لم تتم الموافقة عليها.', 'success', '/employer/wallet')
         conn.execute("UPDATE jobs SET status = 'rejected' WHERE id = %s", (job_id,))
 
     conn.commit()
@@ -2606,7 +3030,7 @@ def admin_handle_payment(rid, action):
         ''', (req['user_id'], req['amount'], balance_before, balance_after, f'تأكيد طلب دفع: {req["reference"]}', req['id']))
         conn.execute("UPDATE payment_requests SET status = 'confirmed', updated_at = CURRENT_TIMESTAMP WHERE id = %s", (rid,))
         notify(req['user_id'], 'تم تأكيد طلب الدفع',
-               f'تم تأكيد طلب الدفع {req["reference"]} وإضافة {req["amount"]} دج إلى محفظتك.', 'success', '/employer/wallet', conn=conn)
+               f'تم تأكيد طلب الدفع {req["reference"]} وإضافة {fmt_num(req["amount"])} دج إلى محفظتك.', 'success', '/employer/wallet', conn=conn)
         flash(f'تم تأكيد طلب الدفع {req["reference"]}', 'success')
     else:
         conn.execute("UPDATE payment_requests SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP WHERE id = %s", (rid,))
@@ -2644,11 +3068,11 @@ def admin_adjust_wallet(user_id):
     ''', (user_id, txn_type, abs(amount), user['wallet_balance'], new_balance,
           f'تعديل يدوي من الإدارة: {"+" + str(amount) if amount > 0 else str(amount)}'))
     notify(user_id, 'تعديل الرصيد',
-           f'تم تعديل رصيد محفظتك بمقدار {amount} دج.', 'info', '/employer/wallet')
+           f'تم تعديل رصيد محفظتك بمقدار {fmt_num(amount)} دج.', 'info', '/employer/wallet')
 
     conn.commit()
     conn.close()
-    flash(f'تم تعديل رصيد المستخدم بمقدار {amount}', 'success')
+    flash(f'تم تعديل رصيد المستخدم بمقدار {fmt_num(amount)} دج', 'success')
     return redirect(url_for('admin_users'))
 
 @app.route('/admin/settings', methods=['GET', 'POST'])
@@ -2805,6 +3229,46 @@ def banner_click(bid):
         return redirect(target)
     conn.close()
     return redirect(url_for('index'))
+
+@app.route('/admin/news', methods=['GET', 'POST'])
+@admin_required
+def admin_news():
+    conn = get_db()
+    if request.method == 'POST':
+        title = request.form.get('title', '').strip()
+        if title:
+            conn.execute('INSERT INTO news_items (title, link_url) VALUES (%s, %s)',
+                         (title, request.form.get('link_url', '').strip()[:500]))
+            conn.commit()
+            flash('تمت إضافة الخبر', 'success')
+        else:
+            flash('يرجى كتابة نص الخبر', 'danger')
+        conn.close()
+        return redirect(url_for('admin_news'))
+    items = conn.execute('SELECT * FROM news_items ORDER BY id DESC').fetchall()
+    conn.close()
+    return render_template('admin/news.html', items=items)
+
+@app.route('/admin/news/<int:nid>/toggle', methods=['POST'])
+@admin_required
+def admin_news_toggle(nid):
+    conn = get_db()
+    item = conn.execute('SELECT is_active FROM news_items WHERE id = %s', (nid,)).fetchone()
+    if item:
+        conn.execute('UPDATE news_items SET is_active = %s WHERE id = %s', (0 if item['is_active'] else 1, nid))
+        conn.commit()
+    conn.close()
+    return redirect(url_for('admin_news'))
+
+@app.route('/admin/news/<int:nid>/delete', methods=['POST'])
+@admin_required
+def admin_news_delete(nid):
+    conn = get_db()
+    conn.execute('DELETE FROM news_items WHERE id = %s', (nid,))
+    conn.commit()
+    conn.close()
+    flash('تم حذف الخبر', 'success')
+    return redirect(url_for('admin_news'))
 
 def get_ad_price():
     conn = get_db()

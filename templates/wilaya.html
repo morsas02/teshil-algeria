@@ -43,7 +43,7 @@
                         </div>
                         <div class="text-start">
                             {% if job.salary_min %}
-                            <span class="salary">{{ job.salary_min }}{% if job.salary_max %}-{{ job.salary_max }}{% endif %} دج</span>
+                            <span class="salary">{{ job.salary_min|num }}{% if job.salary_max %}-{{ job.salary_max|num }}{% endif %} دج</span>
                             {% endif %}
                         </div>
                     </div>

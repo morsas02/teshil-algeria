@@ -7,7 +7,7 @@
     <div class="card bg-light p-3 mb-4">
       <div class="d-flex justify-content-between align-items-center">
         <span style="font-weight:600;">{{ package.name }}</span>
-        <span style="font-size:1.5rem;font-weight:800;color:var(--primary);">{{ package.price }} <small>دج</small></span>
+        <span style="font-size:1.5rem;font-weight:800;color:var(--primary);">{{ package.price|num }} <small>دج</small></span>
       </div>
       <small class="text-muted">{{ package.credits }} رصيد - صالح لمدة {{ package.duration_days }} يوم</small>
     </div>
