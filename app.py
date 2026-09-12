@@ -900,7 +900,7 @@ init_db()
 
 threading.Thread(target=_daily_loop, daemon=True).start()
 
-KEEPALIVE_URL = os.environ.get('APP_URL', 'https://talented-respect-production.up.railway.app')
+KEEPALIVE_URL = os.environ.get('APP_URL', 'https://teeshil-algeria.onrender.com')
 
 def _keepalive_loop():
     import urllib.request
@@ -2440,7 +2440,7 @@ def upload_receipt(request_id):
     send_email(ADMIN_EMAIL, f'إيصال دفع مرفوع - تسهيل ({request_id})',
                f'تم رفع إيصال الدفع للطلب {request_id}:\n'
                f'المستخدم: {payer}\nالمبلغ: {fmt_num(req["amount"])} دج\n'
-               f'راجعه من لوحة الإدارة: https://talented-respect-production.up.railway.app/admin/transactions')
+               f'راجعه من لوحة الإدارة: https://teeshil-algeria.onrender.com/admin/transactions')
     flash('تم رفع الإيصال بنجاح. سنقوم بمراجعته قريباً.', 'success')
     return redirect(url_for('payment_status', request_id=request_id))
 
@@ -2549,7 +2549,7 @@ def create_payment():
                f'طلب دفع جديد في انتظار المراجعة:\n'
                f'المستخدم: {payer}\nالمرجع: {reference}\nالمبلغ: {fmt_num(amount)} دج\n'
                f'الوصف: {description}\n'
-               f'راجعه من لوحة الإدارة: https://talented-respect-production.up.railway.app/admin/transactions')
+               f'راجعه من لوحة الإدارة: https://teeshil-algeria.onrender.com/admin/transactions')
     return redirect(url_for('payment_status', request_id=reference))
 
 @app.route('/employer/payment/<request_id>')
