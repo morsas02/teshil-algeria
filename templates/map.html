@@ -1,0 +1,319 @@
+{% extends "base.html" %}
+{% block title %}خريطة الشركات — تسهيل{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+    #mapPage { padding: 0; margin-top: -1px; }
+    .map-header {
+        background: linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%);
+        color: #fff; padding: 28px 20px 22px; text-align: center;
+    }
+    .map-header h1 { font-size: 1.6rem; font-weight: 800; margin: 0 0 6px; }
+    .map-header p { opacity: .85; font-size: .95rem; margin: 0; }
+    .map-stats { display: flex; justify-content: center; gap: 28px; margin-top: 16px; }
+    .map-stat { text-align: center; }
+    .map-stat .num { font-size: 1.5rem; font-weight: 800; }
+    .map-stat .lbl { font-size: .75rem; opacity: .8; }
+
+    .map-container { position: relative; }
+    #map { width: 100%; height: 65vh; min-height: 400px; z-index: 1; }
+
+    .map-sidebar {
+        position: absolute; top: 0; right: 0; width: 360px; height: 65vh;
+        background: rgba(255,255,255,.96); backdrop-filter: blur(12px);
+        border-left: 1px solid #e5e7eb; z-index: 1000; overflow-y: auto;
+        transform: translateX(100%); transition: transform .3s ease;
+        box-shadow: -4px 0 24px rgba(0,0,0,.1);
+    }
+    .map-sidebar.open { transform: translateX(0); }
+    .sidebar-header {
+        padding: 16px 20px; border-bottom: 1px solid #e5e7eb;
+        display: flex; align-items: center; justify-content: space-between;
+        position: sticky; top: 0; background: rgba(255,255,255,.96); z-index: 2;
+    }
+    .sidebar-header h3 { margin: 0; font-size: 1rem; font-weight: 700; }
+    .sidebar-close { background: none; border: none; font-size: 1.3rem; cursor: pointer; color: #6b7280; padding: 4px; }
+
+    .sidebar-filters { padding: 14px 20px; border-bottom: 1px solid #f3f4f6; }
+    .sidebar-filters select, .sidebar-filters input {
+        width: 100%; padding: 10px 12px; border: 1px solid #d1d5db;
+        border-radius: 10px; font-size: .85rem; margin-bottom: 10px;
+        background: #fff; transition: border-color .2s;
+    }
+    .sidebar-filters select:focus, .sidebar-filters input:focus {
+        outline: none; border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,.15);
+    }
+
+    .sidebar-list { padding: 10px 20px; }
+    .company-card {
+        padding: 14px; border: 1px solid #e5e7eb; border-radius: 14px;
+        margin-bottom: 10px; cursor: pointer; transition: all .2s;
+        background: #fff;
+    }
+    .company-card:hover { border-color: #10b981; box-shadow: 0 4px 16px rgba(16,185,129,.12); transform: translateY(-1px); }
+    .company-card .cc-top { display: flex; align-items: center; gap: 12px; }
+    .company-card .cc-avatar {
+        width: 44px; height: 44px; border-radius: 12px; object-fit: cover;
+        background: linear-gradient(135deg, #d1fae5, #a7f3d0); display: flex;
+        align-items: center; justify-content: center; font-weight: 800; font-size: 1.1rem; color: #059669;
+        flex-shrink: 0;
+    }
+    .company-card .cc-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; }
+    .company-card .cc-info { flex: 1; min-width: 0; }
+    .company-card .cc-name { font-weight: 700; font-size: .9rem; margin: 0 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .company-card .cc-meta { font-size: .75rem; color: #6b7280; }
+    .company-card .cc-badges { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+    .cc-badge {
+        font-size: .7rem; padding: 3px 8px; border-radius: 6px; font-weight: 600;
+    }
+    .cc-badge.sector { background: #dbeafe; color: #1d4ed8; }
+    .cc-badge.jobs { background: #d1fae5; color: #059669; }
+    .cc-badge.size { background: #fef3c7; color: #b45309; }
+
+    .leaflet-popup-content-wrapper {
+        border-radius: 14px !important; box-shadow: 0 8px 32px rgba(0,0,0,.15) !important;
+        padding: 0 !important; overflow: hidden;
+    }
+    .leaflet-popup-content { margin: 0 !important; min-width: 260px; }
+    .popup-card { padding: 16px; }
+    .popup-card .pc-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .popup-card .pc-avatar {
+        width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+        display: flex; align-items: center; justify-content: center; font-weight: 800; color: #059669; font-size: 1rem;
+    }
+    .popup-card .pc-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; }
+    .popup-card .pc-name { font-weight: 700; font-size: .95rem; margin: 0; }
+    .popup-card .pc-location { font-size: .8rem; color: #6b7280; }
+    .popup-card .pc-desc { font-size: .82rem; color: #4b5563; margin: 8px 0; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .popup-card .pc-stats { display: flex; gap: 16px; margin: 10px 0; }
+    .popup-card .pc-stat { text-align: center; }
+    .popup-card .pc-stat .num { font-size: 1rem; font-weight: 800; color: #059669; }
+    .popup-card .pc-stat .lbl { font-size: .65rem; color: #9ca3af; }
+    .popup-card .pc-actions { display: flex; gap: 8px; margin-top: 12px; }
+    .popup-card .pc-btn {
+        flex: 1; text-align: center; padding: 8px 12px; border-radius: 8px;
+        font-size: .8rem; font-weight: 600; text-decoration: none; transition: all .2s;
+    }
+    .popup-card .pc-btn.primary { background: #10b981; color: #fff; }
+    .popup-card .pc-btn.primary:hover { background: #059669; }
+    .popup-card .pc-btn.outline { border: 1px solid #d1d5db; color: #374151; background: #fff; }
+    .popup-card .pc-btn.outline:hover { border-color: #10b981; color: #059669; }
+
+    .map-toggle-sidebar {
+        position: absolute; top: 16px; left: 16px; z-index: 1000;
+        background: #fff; border: 1px solid #d1d5db; border-radius: 12px;
+        padding: 10px 16px; cursor: pointer; font-weight: 700; font-size: .85rem;
+        box-shadow: 0 4px 16px rgba(0,0,0,.1); display: flex; align-items: center; gap: 6px;
+        transition: all .2s;
+    }
+    .map-toggle-sidebar:hover { background: #f0fdf4; border-color: #10b981; }
+
+    .no-location-section { padding: 40px 20px; background: #f9fafb; }
+    .no-location-section h2 { text-align: center; font-size: 1.2rem; color: #374151; margin-bottom: 24px; }
+    .no-location-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; max-width: 1200px; margin: 0 auto; }
+
+    @media (max-width: 768px) {
+        .map-sidebar { width: 100%; height: 50vh; }
+        #map { height: 50vh; }
+        .map-stats { gap: 16px; }
+        .map-toggle-sidebar { top: auto; bottom: 16px; left: 16px; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="mapPage">
+    <div class="map-header">
+        <h1><i class="bi bi-geo-alt-fill"></i> خريطة الشركات</h1>
+        <p>اكتشف مواقع الشركات والوظائف الشاغرة في جميع أنحاء الجزائر</p>
+        <div class="map-stats">
+            <div class="map-stat"><div class="num">{{ employers|length }}</div><div class="lbl">شركة على الخريطة</div></div>
+            <div class="map-stat"><div class="num">{{ all_employers|length + employers|length }}</div><div class="lbl">إجمالي الشركات</div></div>
+        </div>
+    </div>
+
+    <div class="map-container">
+        <button class="map-toggle-sidebar" onclick="toggleSidebar()" id="sidebarToggle">
+            <i class="bi bi-list-ul"></i> قائمة الشركات
+        </button>
+
+        <div class="map-sidebar" id="mapSidebar">
+            <div class="sidebar-header">
+                <h3><i class="bi bi-building"></i> الشركات</h3>
+                <button class="sidebar-close" onclick="toggleSidebar()"><i class="bi bi-x-lg"></i></button>
+            </div>
+            <div class="sidebar-filters">
+                <select id="filterWilaya" onchange="filterCompanies()">
+                    <option value="">جميع الولايات</option>
+                    {% for w in wilayas %}<option value="{{ w }}">{{ w }}</option>{% endfor %}
+                </select>
+                <select id="filterSector" onchange="filterCompanies()">
+                    <option value="">جميع القطاعات</option>
+                    {% for s in sectors %}<option value="{{ s }}">{{ s }}</option>{% endfor %}
+                </select>
+                <input type="text" id="filterSearch" placeholder="ابحث عن شركة..." oninput="filterCompanies()">
+            </div>
+            <div class="sidebar-list" id="sidebarList">
+                {% for e in employers %}
+                <div class="company-card" data-id="{{ e.id }}" data-lat="{{ e.latitude }}" data-lng="{{ e.longitude }}"
+                     data-wilaya="{{ e.wilaya or '' }}" data-sector="{{ e.company_sector or '' }}"
+                     data-name="{{ e.company_name }}" onclick="focusCompany({{ e.latitude }}, {{ e.longitude }}, {{ e.id }})">
+                    <div class="cc-top">
+                        <div class="cc-avatar">
+                            {% if e.company_logo %}<img src="{{ e.company_logo }}" alt="">
+                            {% elif e.avatar_url %}<img src="{{ e.avatar_url }}" alt="">
+                            {% else %}{{ e.company_name[0] }}{% endif %}
+                        </div>
+                        <div class="cc-info">
+                            <div class="cc-name">{{ e.company_name }}</div>
+                            <div class="cc-meta"><i class="bi bi-geo-alt"></i> {{ e.city or '' }}{% if e.wilaya %}، {{ e.wilaya }}{% endif %}</div>
+                        </div>
+                    </div>
+                    <div class="cc-badges">
+                        {% if e.company_sector %}<span class="cc-badge sector">{{ e.company_sector }}</span>{% endif %}
+                        <span class="cc-badge jobs">{{ e.job_count }} وظيفة</span>
+                        {% if e.company_size %}<span class="cc-badge size">{{ e.company_size }}</span>{% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div id="map"></div>
+    </div>
+
+    {% if all_employers %}
+    <div class="no-location-section">
+        <h2><i class="bi bi-building"></i> شركات أخرى (بدون موقع على الخريطة)</h2>
+        <div class="no-location-grid">
+            {% for e in all_employers %}
+            <div class="company-card" style="cursor:default;">
+                <div class="cc-top">
+                    <div class="cc-avatar">
+                        {% if e.company_logo %}<img src="{{ e.company_logo }}" alt="">
+                        {% elif e.avatar_url %}<img src="{{ e.avatar_url }}" alt="">
+                        {% else %}{{ e.company_name[0] }}{% endif %}
+                    </div>
+                    <div class="cc-info">
+                        <div class="cc-name">{{ e.company_name }}</div>
+                        <div class="cc-meta"><i class="bi bi-geo-alt"></i> {{ e.city or '' }}{% if e.wilaya %}، {{ e.wilaya }}{% endif %}</div>
+                    </div>
+                </div>
+                <div class="cc-badges">
+                    {% if e.company_sector %}<span class="cc-badge sector">{{ e.company_sector }}</span>{% endif %}
+                    <span class="cc-badge jobs">{{ e.job_count }} وظيفة</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+var map = L.map('map', {
+    zoomControl: false,
+    attributionControl: true
+}).setView([36.7538, 3.0588], 6);
+
+L.control.zoom({ position: 'topright' }).addTo(map);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors',
+    maxZoom: 19
+}).addTo(map);
+
+var companies = [
+    {% for e in employers %}
+    {
+        id: {{ e.id }},
+        name: "{{ e.company_name|e }}",
+        desc: "{{ (e.company_description or '')|e }}",
+        city: "{{ e.city or '' }}",
+        wilaya: "{{ e.wilaya or '' }}",
+        address: "{{ e.address or '' }}",
+        sector: "{{ e.company_sector or '' }}",
+        size: "{{ e.company_size or '' }}",
+        logo: "{{ e.company_logo or e.avatar_url or '' }}",
+        lat: {{ e.latitude }},
+        lng: {{ e.longitude }},
+        jobs: {{ e.job_count }},
+        applicants: {{ e.applicant_count }}
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+];
+
+var greenIcon = L.divIcon({
+    className: 'custom-marker',
+    html: '<div style="width:36px;height:36px;background:linear-gradient(135deg,#059669,#10b981);border:3px solid #fff;border-radius:50%;box-shadow:0 4px 12px rgba(5,150,105,.4);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;"><i class="bi bi-building"></i></div>',
+    iconSize: [36, 36],
+    iconAnchor: [18, 18],
+    popupAnchor: [0, -20]
+});
+
+var markers = {};
+
+companies.forEach(function(c) {
+    var avatarHtml = c.logo
+        ? '<img src="' + c.logo + '" style="width:100%;height:100%;object-fit:cover;border-radius:10px;">'
+        : c.name.charAt(0);
+
+    var popup = '<div class="popup-card">' +
+        '<div class="pc-header">' +
+            '<div class="pc-avatar">' + avatarHtml + '</div>' +
+            '<div><div class="pc-name">' + c.name + '</div>' +
+            '<div class="pc-location"><i class="bi bi-geo-alt"></i> ' + c.city + (c.wilaya ? '، ' + c.wilaya : '') + '</div></div>' +
+        '</div>' +
+        (c.desc ? '<div class="pc-desc">' + c.desc + '</div>' : '') +
+        '<div class="pc-stats">' +
+            '<div class="pc-stat"><div class="num">' + c.jobs + '</div><div class="lbl">وظيفة</div></div>' +
+            '<div class="pc-stat"><div class="num">' + c.applicants + '</div><div class="lbl">متقدم</div></div>' +
+        '</div>' +
+        '<div class="pc-actions">' +
+            '<a href="/jobs?employer=' + c.id + '" class="pc-btn primary">الوظائف</a>' +
+            '<a href="/employer/' + c.id + '" class="pc-btn outline">الملف</a>' +
+        '</div>' +
+    '</div>';
+
+    var marker = L.marker([c.lat, c.lng], { icon: greenIcon })
+        .addTo(map)
+        .bindPopup(popup, { maxWidth: 300 });
+
+    markers[c.id] = marker;
+});
+
+function focusCompany(lat, lng, id) {
+    map.setView([lat, lng], 14, { animate: true });
+    if (markers[id]) markers[id].openPopup();
+    if (window.innerWidth <= 768) toggleSidebar();
+}
+
+function toggleSidebar() {
+    var sb = document.getElementById('mapSidebar');
+    sb.classList.toggle('open');
+}
+
+function filterCompanies() {
+    var wilaya = document.getElementById('filterWilaya').value;
+    var sector = document.getElementById('filterSector').value;
+    var search = document.getElementById('filterSearch').value.toLowerCase();
+    var cards = document.querySelectorAll('#sidebarList .company-card');
+
+    cards.forEach(function(card) {
+        var show = true;
+        if (wilaya && card.dataset.wilaya !== wilaya) show = false;
+        if (sector && card.dataset.sector !== sector) show = false;
+        if (search && !card.dataset.name.toLowerCase().includes(search)) show = false;
+        card.style.display = show ? '' : 'none';
+
+        var id = parseInt(card.dataset.id);
+        if (markers[id]) {
+            if (show) markers[id].addTo(map);
+            else map.removeLayer(markers[id]);
+        }
+    });
+}
+</script>
+{% endblock %}

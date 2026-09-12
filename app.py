@@ -832,6 +832,23 @@ def init_db():
         except Exception:
             conn.rollback()
 
+    for col, typ, default in [
+        ('latitude', 'REAL', None),
+        ('longitude', 'REAL', None),
+        ('company_avatar', 'TEXT', None),
+    ]:
+        if is_pg:
+            has = conn.execute(f"SELECT 1 FROM information_schema.columns WHERE table_name = 'employers' AND column_name = '{col}'").fetchone()
+            if not has:
+                conn.execute(f'ALTER TABLE employers ADD COLUMN {col} {typ}')
+                conn.commit()
+        else:
+            try:
+                conn.execute(f'ALTER TABLE employers ADD COLUMN {col} {typ}')
+                conn.commit()
+            except Exception:
+                conn.rollback()
+
     if is_pg:
         has_unique = conn.execute("SELECT 1 FROM pg_constraint WHERE conrelid = 'packages'::regclass AND contype = 'u' AND pg_get_constraintdef(oid) LIKE '%UNIQUE (name)%'").fetchone()
         if not has_unique:
@@ -892,6 +909,40 @@ def init_db():
                 'INSERT OR IGNORE INTO packages (name, credits, price, duration_days) VALUES (%s, %s, %s, %s)',
                 (name, credits, price, days)
             )
+
+    seed_employers = [
+        ('Sonatrach', 'شركة سوناطراك - أكبر شركة نفط في أفريقيا', ' الجزائر العاصمة', 'الجزائر', 'الطاقة والنفط', '10000+', 36.7538, 3.0588),
+        ('Cevital', 'مجموعة سيفيتال - أكبر مجموعة خاصة في الجزائر', 'بئر مراد رايس', 'الجزائر', 'الصناعة والتصنيع', '5000-10000', 36.7403, 3.0081),
+        ('Djezzy', 'חברת جيزي للاتصالات', 'بئر مراد رايس', 'الجزائر', 'الاتصالات', '1000-5000', 36.7420, 3.0100),
+        ('Ooredoo', 'شركة أوريدو للاتصالات', 'حاسي مسعود', 'الوادي', 'الاتصالات', '1000-5000', 33.0667, 6.8333),
+        ('Air Algérie', 'الخطوط الجوية الجزائرية', 'المطار الجديد', 'الجزائر', 'النقل والطيران', '5000-10000', 36.6910, 3.2154),
+        ('Bank Algérie', 'البنك العـام الجزائري', ' aldjazair', 'الجزائر', 'المصرفية', '10000+', 36.7525, 3.0580),
+        ('Condor Electronics', 'شركة كوندور للإلكترونيات', 'بئر مراد رايس', 'الجزائر', 'الصناعة الإلكترونية', '1000-5000', 36.7380, 3.0060),
+        ('Hamoud Boualem', 'شركة حمود بوعالم', 'بئر مراد رايس', 'الجزائر', 'الأغذية والمشروبات', '1000-5000', 36.7350, 3.0050),
+        ('ENIE', 'الشركة الوطنية للإلكترونيات', 'بئر مراد رايس', 'الجزائر', 'الصناعة الإلكترونية', '500-1000', 36.7370, 3.0070),
+        ('Groupe Sim', 'شركة سيم لل торговرة', 'وهران', 'وهران', 'التجارة والتوزيع', '1000-5000', 35.6892, -0.6309),
+        ('Raoued Logistics', 'شركة رائد للخدمات اللوجستية', 'قسنطينة', 'قسنطينة', 'اللوجستيات والشحن', '500-1000', 36.3650, 6.6147),
+        ('Algérie Télécom', 'الاتصالات الجزائرية', ' aldjazair', 'الجزائر', 'الاتصالات', '10000+', 36.7500, 3.0600),
+    ]
+    existing_employers = conn.execute('SELECT COUNT(*) as c FROM employers').fetchone()['c']
+    if existing_employers == 0:
+        for company_name, desc, city, wilaya, sector, size, lat, lng in seed_employers:
+            email = company_name.lower().replace(' ', '') + '@example.com'
+            hashed = generate_password_hash('seedpass123')
+            conn.execute(
+                "INSERT INTO users (full_name, email, password, user_type, is_verified, wallet_balance) VALUES (%s, %s, %s, 'employer', 1, 0) ON CONFLICT(email) DO NOTHING" if is_pg else
+                'INSERT OR IGNORE INTO users (full_name, email, password, user_type, is_verified, wallet_balance) VALUES (%s, %s, %s, ?, 1, 0)',
+                (company_name, email, hashed)
+            )
+            user = conn.execute('SELECT id FROM users WHERE email = %s', (email,)).fetchone()
+            if user:
+                conn.execute(
+                    "INSERT INTO employers (user_id, company_name, company_description, city, wilaya, company_sector, company_size, latitude, longitude) "
+                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT(user_id) DO NOTHING" if is_pg else
+                    'INSERT OR IGNORE INTO employers (user_id, company_name, company_description, city, wilaya, company_sector, company_size, latitude, longitude) '
+                    'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                    (user['id'], company_name, desc, city, wilaya, sector, size, lat, lng)
+                )
 
     conn.commit()
     conn.close()
@@ -1286,6 +1337,37 @@ def index():
 
     conn.close()
     return render_template('index.html', featured=featured, recent=recent, urgent=urgent, top_employers=top_employers, banners=banners, news_items=news_items, ticker_jobs=ticker_jobs, ticker_items=ticker_items)
+
+@app.route('/map')
+def company_map():
+    conn = get_db()
+    employers = conn.execute('''
+        SELECT e.id, e.company_name, e.company_description, e.company_logo,
+               e.city, e.wilaya, e.address, e.company_sector, e.company_size,
+               e.latitude, e.longitude,
+               u.full_name, u.avatar_url,
+               (SELECT COUNT(*) FROM jobs WHERE employer_id = e.id AND status = 'approved') as job_count,
+               (SELECT COUNT(*) FROM applications a JOIN jobs j ON a.job_id = j.id WHERE j.employer_id = e.id) as applicant_count
+        FROM employers e JOIN users u ON e.user_id = u.id
+        WHERE e.latitude IS NOT NULL AND e.longitude IS NOT NULL
+        ORDER BY job_count DESC
+    ''').fetchall()
+
+    all_employers = conn.execute('''
+        SELECT e.id, e.company_name, e.city, e.wilaya, e.company_sector, e.company_logo,
+               u.avatar_url,
+               (SELECT COUNT(*) FROM jobs WHERE employer_id = e.id AND status = 'approved') as job_count
+        FROM employers e JOIN users u ON e.user_id = u.id
+        WHERE e.latitude IS NULL OR e.longitude IS NULL
+        ORDER BY job_count DESC LIMIT 50
+    ''').fetchall()
+
+    wilayas = conn.execute("SELECT DISTINCT wilaya FROM employers WHERE wilaya IS NOT NULL AND wilaya != '' ORDER BY wilaya").fetchall()
+    sectors = conn.execute("SELECT DISTINCT company_sector FROM employers WHERE company_sector IS NOT NULL AND company_sector != '' ORDER BY company_sector").fetchall()
+    conn.close()
+    return render_template('map.html', employers=employers, all_employers=all_employers,
+                           wilayas=[w['wilaya'] for w in wilayas],
+                           sectors=[s['company_sector'] for s in sectors])
 
 @app.route('/register', methods=['GET', 'POST'])
 @limiter.limit("3 per minute")

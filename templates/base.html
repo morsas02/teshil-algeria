@@ -381,6 +381,7 @@
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item"><a class="nav-link" href="/"><i class="bi bi-house"></i> الرئيسية</a></li>
                     <li class="nav-item"><a class="nav-link" href="/jobs"><i class="bi bi-search"></i> الوظائف</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/map"><i class="bi bi-geo-alt"></i> الخريطة</a></li>
                     <li class="nav-item"><a class="nav-link" href="/workers"><i class="bi bi-people"></i> العمال</a></li>
                     <li class="nav-item"><a class="nav-link" href="/advertise"><i class="bi bi-megaphone"></i> أعلن معنا</a></li>
                     <li class="nav-item dropdown">
@@ -745,6 +746,7 @@
     <nav class="app-bottomnav" aria-label="التنقل الرئيسي">
         <a href="/" class="app-nav-item{% if request.path == '/' %} active{% endif %}"><i class="bi bi-house-door"></i><span>الرئيسية</span></a>
         <a href="/jobs" class="app-nav-item{% if request.path.startswith('/jobs') or request.path.startswith('/job/') %} active{% endif %}"><i class="bi bi-search"></i><span>الوظائف</span></a>
+        <a href="/map" class="app-nav-item{% if request.path == '/map' %} active{% endif %}"><i class="bi bi-geo-alt"></i><span>الخريطة</span></a>
         <a href="/workers" class="app-nav-item{% if request.path.startswith('/workers') %} active{% endif %}"><i class="bi bi-people"></i><span>العمال</span></a>
         <a href="/advertise" class="app-nav-item{% if request.path.startswith('/advertise') %} active{% endif %}"><i class="bi bi-megaphone"></i><span>أعلن معنا</span></a>
         <button type="button" class="app-nav-item" id="appMoreBtn"><i class="bi bi-grid"></i><span>المزيد</span></button>
