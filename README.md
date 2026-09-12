@@ -2,8 +2,8 @@
 
 منصة جزائرية للتوظيف تربط الباحثين عن عمل (العمال) بأرباب العمل، مع نظام محفظة ومدفوعات محلية وإعلانات مموّلة ولوحة إدارة كاملة.
 
-- **الإنتاج**: https://talented-respect-production.up.railway.app
-- **البيئة**: Railway (مشروع `teshil`) — خدمة `talented-respect` + PostgreSQL + وحدة تخزين دائمة
+- **الإنتاج**: https://teeshil-algeria.onrender.com
+- **البيئة**: Render (مشروع `teshil`) — خدمة `talented-respect` + PostgreSQL + وحدة تخزين دائمة
 - **اللغة**: Python 3.12 + Flask
 
 ---

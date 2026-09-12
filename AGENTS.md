@@ -16,7 +16,7 @@
 
 ## بيئة الإنتاج (Railway)
 
-- **الموقع**: https://talented-respect-production.up.railway.app (مشروع `teshil`، بيئة production، خدمة `talented-respect`).
+- **الموقع**: https://teeshil-algeria.onrender.com (مشروع `teshil`، بيئة production، خدمة `talented-respect`).
 - **قاعدة البيانات**: PostgreSQL على Railway (خدمة "Postgres"). بيانات الإنتاج لا تُصفّر عند النشر.
 - **الملفات المرفوعة** (صور/إيصالات/نسخ احتياطية) تُحفظ في وحدة تخزين دائمة `talented-respect-volume`
   مركّبة في `/app/storage`، ومتغير البيئة `STORAGE_ROOT=/app/storage`. لا تصل الملفات عبر الـ container العابر.
