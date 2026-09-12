@@ -71,9 +71,11 @@
 
         .social-row { display: flex; gap: 10px; }
         .social-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 9px; padding: 12px; border-radius: 14px; font-weight: 700; font-size: .92rem; text-decoration: none; transition: all .3s; border: 1.5px solid rgba(107,114,128,.22); color: var(--gray-700); background: rgba(255,255,255,.65); }
+        .social-btn svg { flex-shrink: 0; }
         .social-btn:hover { transform: translateY(-2px); text-decoration: none; }
         .social-google:hover { border-color: #ea4335; color: #ea4335; box-shadow: 0 10px 24px rgba(234,67,53,.18); }
         .social-facebook:hover { border-color: #1877f2; color: #1877f2; box-shadow: 0 10px 24px rgba(24,119,242,.18); }
+        .social-btn:active { transform: scale(.98); }
 
         .auth-foot { text-align: center; margin-top: 20px; font-size: .9rem; color: var(--gray-500); }
         .auth-foot a { color: var(--primary); font-weight: 800; text-decoration: none; }

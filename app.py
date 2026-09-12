@@ -127,9 +127,9 @@ ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', 'admin@ta9eef.dz')
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123456')
 JOB_PRICE = 1000
 AD_PRICE_PER_WEEK = 5000
-APP_VERSION_NAME = '1.9'
+APP_VERSION_NAME = '1.10'
 APP_VERSION_CODE = 8
-APP_APK_URL = '/static/app/ta9eef.apk?v=10'
+APP_APK_URL = '/static/app/ta9eef.apk?v=11'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 AVATAR_MAX_SIZE = 2 * 1024 * 1024
 ALLOWED_RECEIPT_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'pdf'}
@@ -636,6 +636,26 @@ SCHEMA = '''
         link_url TEXT DEFAULT '',
         is_active INTEGER DEFAULT 1,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS promo_contacts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        email TEXT UNIQUE NOT NULL,
+        sector TEXT DEFAULT '',
+        source TEXT DEFAULT 'manual',
+        unsubscribed INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS promo_sends (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        contact_id INTEGER,
+        email TEXT NOT NULL,
+        subject TEXT DEFAULT '',
+        status TEXT DEFAULT 'pending',
+        error TEXT,
+        sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 '''
 
@@ -3269,6 +3289,215 @@ def admin_news_delete(nid):
     conn.close()
     flash('تم حذف الخبر', 'success')
     return redirect(url_for('admin_news'))
+
+def _brevo_send_sync(to, subject, text, html=None):
+    import requests
+    payload = {
+        'sender': {'name': BREVO_SENDER_NAME, 'email': BREVO_SENDER},
+        'to': [{'email': to}],
+        'subject': subject,
+        'textContent': text,
+    }
+    if html:
+        payload['htmlContent'] = html
+    resp = requests.post('https://api.brevo.com/v3/smtp/email',
+                         json=payload, headers={'api-key': BREVO_API_KEY}, timeout=20)
+    return resp.status_code, resp.text[:300]
+
+def _parse_contact_line(line):
+    line = line.strip().strip(';').strip(',')
+    if not line:
+        return None
+    if '<' in line and '>' in line:
+        name = line[:line.index('<')].strip()
+        email = line[line.index('<') + 1:line.index('>')].strip()
+        sector = ''
+    else:
+        parts = [p.strip() for p in line.replace(';', ',').split(',')]
+        name = parts[0] if len(parts) >= 2 else ''
+        email = parts[1] if len(parts) >= 2 else parts[0]
+        sector = parts[2] if len(parts) >= 3 else ''
+    email = email.lower()
+    if not email or '@' not in email:
+        return None
+    return name, email, sector
+
+def _add_contact(name, email, sector, source='manual'):
+    email = (email or '').strip().lower()
+    if not email or '@' not in email:
+        return 'invalid'
+    conn = get_db()
+    try:
+        exists = conn.execute('SELECT id FROM promo_contacts WHERE email = %s', (email,)).fetchone()
+        if exists:
+            return 'exists'
+        conn.execute('INSERT INTO promo_contacts (name, email, sector, source) VALUES (%s, %s, %s, %s)',
+                     (name or None, email, sector or '', source))
+        conn.commit()
+        return 'added'
+    finally:
+        conn.close()
+
+def _promo_email_html(name, message, unsubscribe_url):
+    n = (name or '').strip()
+    greeting = f'<p style="margin:0 0 12px;line-height:1.9">السيد/السيدة <b>{n}</b>،</p>' if n else '<p style="margin:0 0 12px;line-height:1.9">مرحباً،</p>'
+    msg_html = (message or '').replace('\n', '<br>')
+    return f'''<!doctype html>
+<html dir="rtl" lang="ar">
+<head><meta charset="utf-8"><title>تسهيل</title></head>
+<body style="margin:0;padding:0;background:#eef3fb;font-family:Segoe UI,Tahoma,Arial,sans-serif">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#eef3fb;padding:24px 12px">
+  <tr><td align="center">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;background:#ffffff;border-radius:18px;overflow:hidden;border:1px solid #e2e8f0">
+      <tr>
+        <td style="background:linear-gradient(135deg,#00b36b,#2563eb);padding:26px 30px;text-align:right">
+          <table role="presentation" width="100%"><tr>
+            <td style="text-align:right"><span style="font-size:24px;font-weight:800;color:#ffffff">تسهيل</span><br><span style="font-size:13px;color:rgba(255,255,255,.85)">منصة التوظيف الجزائرية الأولى</span></td>
+          </tr></table>
+        </td>
+      </tr>
+      <tr><td style="padding:30px 32px;color:#334155;font-size:15px">
+        {greeting}
+        {msg_html}
+        <p style="margin:20px 0 0;line-height:1.9">مع منصة <b>تسهيل</b> يمكنكم نشر وظائفكم الشاغرة والوصول إلى آلاف الباحثين عن عمل في الجزائر، وإدارة طلبات التوظيف بسهولة، خلال دقائق.</p>
+        <table role="presentation" cellspacing="0" cellpadding="0" style="margin:26px 0 8px"><tr>
+          <td style="border-radius:12px;background:linear-gradient(135deg,#00b36b,#2563eb);padding:13px 34px"><a href="{BASE_URL}/app?utm=promo" style="color:#ffffff;text-decoration:none;font-weight:700;font-size:15px">اكتشف المنصة الآن</a></td>
+        </tr></table>
+        <p style="margin:22px 0 0;font-size:12px;color:#7a8ba0;line-height:1.8">لتحميل تطبيق أندرويد: <a href="{BASE_URL}/app?utm=promo" style="color:#2563eb">{BASE_URL}/app</a></p>
+      </td></tr>
+      <tr>
+        <td style="background:#f8fafc;padding:18px 32px;text-align:center;font-size:12px;color:#7a8ba0;line-height:2">
+          أُرسلت هذه الرسالة إلى جهة تتعامل مع قطاع التوظيف في الجزائر.<br>
+          إذا لم تعد ترغب في استلام رسائل ترويجية، يمكنك إلغاء الاشتراك <a href="{unsubscribe_url}" style="color:#2563eb">من هنا</a>.
+        </td>
+      </tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>'''
+
+def _run_promo_campaign(subject, text):
+    html = _promo_email_html('{{name}}', text, BASE_URL + '/promo/unsubscribe?e={{email}}')
+    conn = get_db()
+    try:
+        rows = conn.execute(
+            "SELECT id, name, email FROM promo_contacts WHERE unsubscribed = 0 "
+            "AND email NOT IN (SELECT email FROM promo_sends WHERE status = 'sent')"
+        ).fetchall()
+        for row in rows:
+            n = row['name'] or ''
+            e = row['email']
+            body = text.replace('{{name}}', n)
+            html_body = html.replace('{{name}}', n).replace('{{email}}', e)
+            try:
+                code, msg = _brevo_send_sync(e, subject, body, html_body)
+                status = 'sent' if code == 201 else 'error'
+                err = '' if code == 201 else msg
+            except Exception as exc:
+                status, err = 'error', str(exc)[:300]
+            conn.execute(
+                "INSERT INTO promo_sends (contact_id, email, subject, status, error) VALUES (%s, %s, %s, %s, %s)",
+                (row['id'], e, subject, status, err))
+            conn.commit()
+    finally:
+        conn.close()
+
+@app.route('/admin/promo', methods=['GET', 'POST'])
+@admin_required
+def admin_promo():
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        email = request.form.get('email', '').strip().lower()
+        sector = request.form.get('sector', '').strip()
+        added = dup = skipped = 0
+        if email:
+            r = _add_contact(name, email, sector)
+            if r == 'added':
+                added += 1
+            elif r == 'exists':
+                dup += 1
+            else:
+                skipped += 1
+        bulk = request.form.get('bulk', '').strip()
+        for line in bulk.splitlines():
+            parsed = _parse_contact_line(line)
+            if not parsed:
+                skipped += 1
+                continue
+            n, em, sec = parsed
+            r = _add_contact(n, em, sec, source='csv')
+            if r == 'added':
+                added += 1
+            else:
+                dup += 1
+        flash(f'تمت إضافة {added} جهة اتصال ({dup} مكررة، {skipped} سطراً غير صالح)', 'success')
+        return redirect(url_for('admin_promo'))
+    conn = get_db()
+    contacts = conn.execute('SELECT * FROM promo_contacts ORDER BY id DESC LIMIT 500').fetchall()
+    sends = conn.execute('SELECT * FROM promo_sends ORDER BY id DESC LIMIT 200').fetchall()
+    sent_count = conn.execute("SELECT COUNT(*) AS c FROM promo_sends WHERE status = 'sent'").fetchone()['c']
+    error_count = conn.execute("SELECT COUNT(*) AS c FROM promo_sends WHERE status = 'error'").fetchone()['c']
+    eligible = conn.execute("SELECT COUNT(*) AS c FROM promo_contacts WHERE unsubscribed = 0 "
+                            "AND email NOT IN (SELECT email FROM promo_sends WHERE status = 'sent')").fetchone()['c']
+    total = conn.execute('SELECT COUNT(*) AS c FROM promo_contacts').fetchone()['c']
+    ds = conn.execute("SELECT value FROM settings WHERE key = 'promo_draft_subject'").fetchone()
+    dt = conn.execute("SELECT value FROM settings WHERE key = 'promo_draft_text'").fetchone()
+    conn.close()
+    return render_template('admin/promo.html', contacts=contacts, sends=sends,
+                           total=total, eligible=eligible, sent_count=sent_count,
+                           error_count=error_count, sender_email=BREVO_SENDER,
+                           sender_name=BREVO_SENDER_NAME,
+                           draft_subject=(ds['value'] if ds else ''),
+                           draft_text=(dt['value'] if dt else ''))
+
+@app.route('/admin/promo/contact/<int:cid>/delete', methods=['POST'])
+@admin_required
+def admin_promo_contact_delete(cid):
+    conn = get_db()
+    conn.execute('DELETE FROM promo_contacts WHERE id = %s', (cid,))
+    conn.commit()
+    conn.close()
+    flash('تم حذف جهة الاتصال', 'success')
+    return redirect(url_for('admin_promo'))
+
+@app.route('/admin/promo/contact/<int:cid>/unsub', methods=['POST'])
+@admin_required
+def admin_promo_contact_unsub(cid):
+    conn = get_db()
+    conn.execute('UPDATE promo_contacts SET unsubscribed = %s WHERE id = %s',
+                 (0 if request.form.get('restore') else 1, cid))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('admin_promo'))
+
+@app.route('/admin/promo/send', methods=['POST'])
+@admin_required
+def admin_promo_send():
+    subject = request.form.get('subject', '').strip()
+    text = request.form.get('text', '').strip()
+    if not subject or not text:
+        flash('يجب إدخال الموضوع ونص الرسالة', 'danger')
+        return redirect(url_for('admin_promo'))
+    if not (BREVO_API_KEY and BREVO_SENDER):
+        flash('Brevo غير مضبوط: BREVO_API_KEY وBREVO_SENDER غير متوفرين', 'danger')
+        return redirect(url_for('admin_promo'))
+    threading.Thread(target=_run_promo_campaign, args=(subject, text), daemon=True).start()
+    flash('بدأت الحملة في الخلفية، ستظهر النتائج في سجل الإرسال خلال لحظات', 'success')
+    return redirect(url_for('admin_promo'))
+
+@app.route('/promo/unsubscribe')
+def promo_unsubscribe():
+    e = (request.args.get('e') or '').strip().lower()
+    conn = get_db()
+    if e:
+        conn.execute('UPDATE promo_contacts SET unsubscribed = 1 WHERE email = %s', (e,))
+        conn.execute("INSERT INTO promo_contacts (name, email, unsubscribed) "
+                     "SELECT NULL, %s, 1 WHERE NOT EXISTS (SELECT 1 FROM promo_contacts WHERE email = %s)", (e, e))
+        conn.commit()
+    conn.close()
+    return render_template('unsubscribed.html')
+
 
 def get_ad_price():
     conn = get_db()

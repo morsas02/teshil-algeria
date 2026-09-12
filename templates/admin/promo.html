@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% block title %}حملة الترويج بالبريد{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div class="container d-flex justify-content-between align-items-center">
+        <h4 class="fw-bold mb-0"><i class="bi bi-megaphone text-primary"></i> حملة الترويج بالبريد</h4>
+        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#composeModal">
+            <i class="bi bi-send"></i> إرسال حملة الآن
+        </button>
+    </div>
+</div>
+<div class="container py-4">
+    <div class="alert alert-info d-flex align-items-center gap-2 py-2">
+        <i class="bi bi-info-circle"></i>
+        <small>أضف جهات اتصال (فنادق/شركات) ثم أرسل حملة ترويجية عبر Brevo. أعداؤك من المرسل: <b>{{ sender_name }} &lt;{{ sender_email }}&gt;</b></small>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card text-center py-3 h-100">
+                <div class="text-muted small">إجمالي جهات الاتصال</div>
+                <div class="fs-3 fw-bold">{{ total }}</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center py-3 h-100">
+                <div class="text-muted small">جاهزون للإرسال</div>
+                <div class="fs-3 fw-bold text-success">{{ eligible }}</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center py-3 h-100">
+                <div class="text-muted small">أُرسلت بنجاح</div>
+                <div class="fs-3 fw-bold text-primary">{{ sent_count }}</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center py-3 h-100">
+                <div class="text-muted small">أخطاء الإرسال</div>
+                <div class="fs-3 fw-bold text-danger">{{ error_count }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header bg-white fw-bold">إضافة جهات اتصال</div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('admin_promo') }}" class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label small mb-1">الاسم / المؤسسة</label>
+                    <input type="text" name="name" class="form-control form-control-sm" placeholder="فندق الجزائر">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small mb-1">البريد الإلكتروني</label>
+                    <input type="email" name="email" class="form-control form-control-sm" placeholder="contact@example.dz" dir="ltr" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small mb-1">القطاع (اختياري)</label>
+                    <input type="text" name="sector" class="form-control form-control-sm" placeholder="فنادق">
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-success btn-sm w-100"><i class="bi bi-plus-lg"></i> إضافة</button>
+                </div>
+            </form>
+            <hr>
+            <form method="POST" action="{{ url_for('admin_promo') }}">
+                <label class="form-label small mb-1">إضافة دفعة (كل سطر: <code dir="ltr">الاسم,البريد,القطاع</code> أو <code dir="ltr">الاسم &lt;البريد&gt;</code>)</label>
+                <textarea name="bulk" class="form-control form-control-sm" rows="5" dir="ltr" placeholder="فندق الهيلتون الجزائر,hilton.dz@gmail.com,فنادق&#10;شركة النفط الجزائرية,contact@oil-dz.com,صناعة"></textarea>
+                <button class="btn btn-outline-success btn-sm mt-2"><i class="bi bi-file-earmark-plus"></i> إضافة الدفعة</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header bg-white fw-bold">جهات الاتصال</div>
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>الاسم</th>
+                        <th>البريد</th>
+                        <th>القطاع</th>
+                        <th>الحالة</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in contacts %}
+                    <tr>
+                        <td>{{ c.id }}</td>
+                        <td>{{ c.name or '—' }}</td>
+                        <td dir="ltr" class="text-start"><small>{{ c.email }}</small></td>
+                        <td><small>{{ c.sector or '—' }}</small></td>
+                        <td>
+                            {% if c.unsubscribed %}
+                            <span class="badge bg-secondary">انسحب</span>
+                            {% else %}
+                            <span class="badge bg-success">نشط</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if c.unsubscribed %}
+                            <form method="POST" action="{{ url_for('admin_promo_contact_unsub', cid=c.id) }}" style="display:inline;">
+                                <input type="hidden" name="restore" value="1">
+                                <button class="btn btn-sm btn-outline-secondary" title="إعادة تفعيل"><i class="bi bi-arrow-counterclockwise"></i></button>
+                            </form>
+                            {% else %}
+                            <form method="POST" action="{{ url_for('admin_promo_contact_unsub', cid=c.id) }}" style="display:inline;">
+                                <button class="btn btn-sm btn-outline-warning" title="إلغاء الاشتراك"><i class="bi bi-x-circle"></i></button>
+                            </form>
+                            {% endif %}
+                            <form method="POST" action="{{ url_for('admin_promo_contact_delete', cid=c.id) }}" style="display:inline;"
+                                  onsubmit="return confirm('حذف جهة الاتصال نهائياً؟');">
+                                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="6" class="text-center text-muted py-4">لا توجد جهات اتصال بعد</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-white fw-bold">سجل الإرسال</div>
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>البريد</th>
+                        <th>الموضوع</th>
+                        <th>الحالة</th>
+                        <th>الخطأ</th>
+                        <th>التاريخ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in sends %}
+                    <tr>
+                        <td>{{ s.id }}</td>
+                        <td dir="ltr" class="text-start"><small>{{ s.email }}</small></td>
+                        <td><small>{{ s.subject }}</small></td>
+                        <td>
+                            {% if s.status == 'sent' %}
+                            <span class="badge bg-success">تم</span>
+                            {% else %}
+                            <span class="badge bg-danger" title="{{ s.error }}">فشل</span>
+                            {% endif %}
+                        </td>
+                        <td dir="ltr" class="text-start"><small class="text-danger">{{ (s.error or '')[:60] }}</small></td>
+                        <td><small>{{ s.sent_at|date }}</small></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="6" class="text-center text-muted py-4">لا توجد إرسالات بعد</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="composeModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">إرسال حملة ترويجية</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('admin_promo_send') }}">
+                <div class="modal-body">
+                    <div class="alert alert-warning py-2 small">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        ستُرسل الرسالة إلى جميع جهات الاتصال النشطة غير المرسل إليها سابقاً
+                        (حالياً: <b>{{ eligible }}</b>). لا يمكن التراجع.
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">موضوع الرسالة</label>
+                        <input type="text" name="subject" class="form-control" value="{{ draft_subject }}" required placeholder="مثال: منصة تسهيل — حلول التوظيف لمؤسستكم">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">نص الرسالة</label>
+                        <textarea name="text" class="form-control" rows="7" required placeholder="اكتب رسالة تعريفية...">{{ draft_text }}</textarea>
+                        <small class="text-muted">استخدم <code>{{ '{{name}}' }}</code> لتخصيص الرسالة باسم جهة الاتصال.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary w-100" onclick="return confirm('تأكيد إرسال الحملة إلى {{ eligible }} جهة اتصال؟');">
+                        <i class="bi bi-send"></i> إرسال الحملة
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
